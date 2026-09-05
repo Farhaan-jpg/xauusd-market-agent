@@ -11,34 +11,39 @@ from app.config.settings import settings
 from app.core.logging import logger
 
 class GeminiProvider(BaseAIProvider):
-    """Google Gemini AI integration using direct REST endpoints with multi-model fallback and quota resilience."""
+    """Google Gemini AI integration using direct REST endpoints with multi-model fallback across verified running models."""
 
     def __init__(self):
         super().__init__(name="Google_Gemini")
         self.api_key = settings.GEMINI_API_KEY
-        self.model = settings.GEMINI_MODEL or "gemini-1.5-flash-latest"
+        self.model = settings.GEMINI_MODEL or "gemini-flash-latest"
 
     async def synthesize(self, structured_input: Dict[str, Any]) -> AISynthesisOutput:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not configured.")
 
-        # Candidate models with primary model first, followed by resilient official endpoints
-        candidate_models = [self.model]
-        fallback_pool = [
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-002",
-            "gemini-1.5-flash-001",
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-exp",
-            "gemini-1.5-flash-8b",
-            "gemini-1.5-pro-latest",
-            "gemini-1.5-pro",
-            "gemini-3.7-flash"
+        # Candidate models with primary model first, followed by verified running models
+        primary_clean = self.model.replace("models/", "").strip()
+        candidate_models = [primary_clean]
+
+        verified_running_models = [
+            "gemini-flash-latest",
+            "gemini-flash-lite-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.7-flash",
+            "gemini-3.8-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-pro-latest",
+            "gemini-3.1-pro-preview",
+            "gemini-3.1-flash-lite",
+            "gemini-3-flash-preview"
         ]
-        for fallback_m in fallback_pool:
-            if fallback_m not in candidate_models:
-                candidate_models.append(fallback_m)
+
+        for m in verified_running_models:
+            clean_m = m.replace("models/", "").strip()
+            if clean_m not in candidate_models:
+                candidate_models.append(clean_m)
 
         prompt = generate_synthesis_prompt(structured_input)
         payload = {
@@ -67,7 +72,7 @@ class GeminiProvider(BaseAIProvider):
                     res_json = response.json()
                     candidates = res_json.get("candidates", [])
                     if not candidates:
-                        logger.warning(f"No candidate parts in Gemini response for {current_model}.")
+                        logger.warning(f"No candidate parts returned from Gemini {current_model}.")
                         continue
 
                     raw_text = candidates[0]["content"]["parts"][0]["text"]
@@ -86,13 +91,13 @@ class GeminiProvider(BaseAIProvider):
                     continue
 
                 elif response.status_code in [400, 404]:
-                    # Model not supported or deprecated -> advance to next model
+                    # Model not supported in this region/key -> advance to next model
                     logger.warning(f"Gemini model '{current_model}' returned status {response.status_code}. Trying next model...")
                     last_error = Exception(f"Gemini model '{current_model}' not available ({response.status_code}).")
                     continue
 
                 elif response.status_code == 503:
-                    # Model overloaded -> advance to next model without long sleep
+                    # Model overloaded -> advance to next model
                     logger.warning(f"Gemini model '{current_model}' returned 503 (high demand). Switching to next model...")
                     last_error = Exception(f"Gemini model '{current_model}' overloaded (503).")
                     continue
