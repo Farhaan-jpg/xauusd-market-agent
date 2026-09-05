@@ -63,14 +63,27 @@ os.makedirs(templates_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
-@app.get("/", response_class=HTMLResponse)
+from fastapi.responses import HTMLResponse, JSONResponse, Response
+
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
     """Renders the main dark-mode web dashboard."""
+    if request.method == "HEAD":
+        return Response(status_code=200, media_type="text/html")
     return templates.TemplateResponse(request=request, name="index.html", context={"app_name": settings.APP_NAME})
 
-@app.get("/health")
-async def health_check() -> Dict[str, Any]:
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Favicon endpoint preventing 404 logs."""
+    svg_data = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚜️</text></svg>'
+    return Response(content=svg_data, media_type="image/svg+xml")
+
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check(request: Request) -> Any:
     """Health check endpoint evaluating database and provider status."""
+    if request.method == "HEAD":
+        return Response(status_code=200)
+
     health_records = await Repository.get_all_provider_health()
     all_healthy = all(r.is_healthy for r in health_records) if health_records else True
 
