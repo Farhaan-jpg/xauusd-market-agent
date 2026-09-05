@@ -306,9 +306,14 @@ async def get_institutional_flow() -> Dict[str, Any]:
     snapshot = await Repository.get_latest_market_snapshot()
     price = snapshot.price if snapshot else 2900.0
 
+    from app.data.macro.macro_provider import MacroDataProvider
+    macro_provider = MacroDataProvider()
+    macro_data = await macro_provider.fetch()
+
     from app.analysis.institutional.cot_engine import InstitutionalCOTEngine
     engine = InstitutionalCOTEngine()
-    return engine.analyze(gold_price=price)
+    return engine.analyze(gold_price=price, macro_data=macro_data)
+
 
 @app.post("/api/simulate-scenario")
 async def simulate_scenario(payload: Dict[str, Any]) -> Dict[str, Any]:
