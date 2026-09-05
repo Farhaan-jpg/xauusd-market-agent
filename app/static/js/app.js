@@ -66,7 +66,8 @@ function initSettingsModal() {
                 GEMINI_API_KEY: document.getElementById("cfg-gemini-key").value,
                 OPENROUTER_API_KEY: document.getElementById("cfg-openrouter-key").value,
                 ANALYSIS_INTERVAL_SECONDS: parseInt(document.getElementById("cfg-interval").value),
-                LIQUIDITY_TOLERANCE_PIPS: parseFloat(document.getElementById("cfg-liq-tol").value)
+                LIQUIDITY_TOLERANCE_PIPS: parseFloat(document.getElementById("cfg-liq-tol").value),
+                PAUSE_ON_WEEKENDS: document.getElementById("cfg-weekend-pause").checked
             };
 
             try {
@@ -128,6 +129,7 @@ async function loadConfigIntoModal() {
             document.getElementById("cfg-openrouter-key").value = cfg.openrouter_key_masked || "";
             document.getElementById("cfg-interval").value = cfg.analysis_interval_seconds || "180";
             document.getElementById("cfg-liq-tol").value = cfg.liquidity_tolerance_pips || 1.5;
+            document.getElementById("cfg-weekend-pause").checked = cfg.pause_on_weekends !== false;
         }
     } catch (err) {
         console.error("Failed to load config:", err);
@@ -186,6 +188,26 @@ function updateReportUI(report) {
 
     const provTag = document.getElementById("ai-provider-tag");
     if (provTag) provTag.textContent = report.provider_used || "Deterministic Engine";
+
+    // Update Final Market Verdict Banner
+    const verdictBadge = document.getElementById("final-market-verdict-badge");
+    const verdictText = document.getElementById("final-market-verdict-text");
+    if (verdictBadge) {
+        const v = (report.final_market_verdict || (report.direction?.includes("BULL") ? "BULLISH" : report.direction?.includes("BEAR") ? "BEARISH" : "NEUTRAL")).toUpperCase();
+        if (v.includes("BULL")) {
+            verdictBadge.textContent = "🟢 BULL MARKET (BULLISH BIAS)";
+            verdictBadge.className = "verdict-tag bullish";
+        } else if (v.includes("BEAR")) {
+            verdictBadge.textContent = "🔴 BEAR MARKET (BEARISH BIAS)";
+            verdictBadge.className = "verdict-tag bearish";
+        } else {
+            verdictBadge.textContent = "⚪ NEUTRAL (SIDEWAYS / BALANCED)";
+            verdictBadge.className = "verdict-tag";
+        }
+    }
+    if (verdictText) {
+        verdictText.textContent = report.executive_verdict_summary || report.macro_summary || "Multi-signal synthesis complete.";
+    }
 
     const driversList = document.getElementById("dominant-drivers-list");
     if (driversList && report.dominant_drivers?.length) {

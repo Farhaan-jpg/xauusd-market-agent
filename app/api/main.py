@@ -141,6 +141,8 @@ async def get_latest_report() -> Dict[str, Any]:
         "macro_summary": run.macro_summary,
         "news_summary": run.news_summary,
         "liquidity_summary": run.liquidity_summary or [],
+        "final_market_verdict": run.final_market_verdict or "NEUTRAL",
+        "executive_verdict_summary": run.executive_verdict_summary or "",
         "risk_factors": run.risk_factors,
         "data_quality": run.data_quality,
         "provider_used": run.provider_used
@@ -283,6 +285,7 @@ async def get_config() -> Dict[str, Any]:
         "telegram_token_masked": mask_secret(settings.TELEGRAM_BOT_TOKEN),
         "telegram_chat_id": settings.TELEGRAM_CHAT_ID or "",
         "telegram_alerts_enabled": settings.TELEGRAM_ALERTS_ENABLED,
+        "pause_on_weekends": settings.PAUSE_ON_WEEKENDS,
         "liquidity_tolerance_pips": settings.LIQUIDITY_TOLERANCE_PIPS,
         "direction_change_threshold": settings.DIRECTION_CHANGE_THRESHOLD_SCORE
     }
@@ -307,7 +310,7 @@ async def update_config(payload: Dict[str, Any]) -> Dict[str, Any]:
             if v is not None:
                 try: clean_updates[k] = float(v)
                 except Exception: pass
-        elif k == "TELEGRAM_ALERTS_ENABLED":
+        elif k in ["TELEGRAM_ALERTS_ENABLED", "PAUSE_ON_WEEKENDS"]:
             clean_updates[k] = bool(v)
 
     settings.update_runtime_config(clean_updates)

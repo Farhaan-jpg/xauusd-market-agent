@@ -8,6 +8,8 @@ class AISynthesisOutput(BaseModel):
     direction: str = Field(description="BULLISH, BEARISH, NEUTRAL, STRONGLY BULLISH, STRONGLY BEARISH, or INSUFFICIENT DATA")
     score: float = Field(ge=-100.0, le=100.0, description="Directional score from -100 to +100")
     confidence: float = Field(ge=0.0, le=100.0, description="Confidence score from 0 to 100")
+    final_market_verdict: str = Field(default="NEUTRAL", description="Clear single conclusion: BULLISH, BEARISH, or NEUTRAL")
+    executive_verdict_summary: str = Field(default="", description="Executive concluding statement synthesizing all collected indicators, macro, yields, news, and liquidity")
     dominant_drivers: List[str] = Field(default_factory=list, description="Top 2-3 primary factors shaping the market")
     supporting_factors: List[str] = Field(default_factory=list, description="Factors supporting the direction")
     contradicting_factors: List[str] = Field(default_factory=list, description="Conflicting or opposing factors")

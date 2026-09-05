@@ -56,6 +56,17 @@ class DeterministicFallbackProvider(BaseAIProvider):
         else:
             news_summary = "No major market-moving news headlines detected in the current monitoring window."
 
+        # Determine simplified clean final verdict (BULLISH, BEARISH, NEUTRAL)
+        if "BULLISH" in direction:
+            final_verdict = "BULLISH"
+            verdict_desc = f"Overall market evidence indicates a BULLISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Supportive factors across macro/yields and technical momentum favor upward expansion."
+        elif "BEARISH" in direction:
+            final_verdict = "BEARISH"
+            verdict_desc = f"Overall market evidence indicates a BEARISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Prevailing headwinds across USD strength, yields, and resistance structure constrain upward price potential."
+        else:
+            final_verdict = "NEUTRAL"
+            verdict_desc = f"Overall market evidence indicates a NEUTRAL / CONSOLIDATION posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Drivers are balanced with competing forces across macroeconomic signals and technical ranges."
+
         # Risk factors
         risk_factors = (
             f"Key watchpoints include upcoming economic data releases, shifts in Treasury yields, "
@@ -66,6 +77,8 @@ class DeterministicFallbackProvider(BaseAIProvider):
             direction=direction,
             score=score,
             confidence=confidence,
+            final_market_verdict=final_verdict,
+            executive_verdict_summary=verdict_desc,
             dominant_drivers=dominant_drivers,
             supporting_factors=supporting,
             contradicting_factors=contradicting,

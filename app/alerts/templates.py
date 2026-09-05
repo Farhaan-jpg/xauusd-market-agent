@@ -41,10 +41,21 @@ class AlertTemplates:
         news_summary: str,
         risk_factors: str,
         upcoming_events: list,
-        provider_used: str
+        provider_used: str,
+        final_market_verdict: str = "",
+        executive_verdict_summary: str = ""
     ) -> str:
         esc = TelegramBot.escape
         dir_emoji = "🟢" if "BULLISH" in direction else "🔴" if "BEARISH" in direction else "⚪"
+
+        # Determine explicit verdict display (BULL / BEAR / NEUTRAL)
+        v = (final_market_verdict or ("BULLISH" if "BULL" in direction else "BEARISH" if "BEAR" in direction else "NEUTRAL")).upper()
+        if "BULL" in v:
+            verdict_badge = "🟢 <b>BULL MARKET (BULLISH BIAS)</b>"
+        elif "BEAR" in v:
+            verdict_badge = "🔴 <b>BEAR MARKET (BEARISH BIAS)</b>"
+        else:
+            verdict_badge = "⚪ <b>NEUTRAL (SIDEWAYS / BALANCED)</b>"
 
         above_str = ""
         for z in liquidity_above[:2]:
@@ -65,6 +76,8 @@ class AlertTemplates:
             events_str += f"\n  • <b>{esc(e.get('event_name', ''))}</b> [{esc(e.get('importance', ''))}]"
         if not events_str: events_str = "\n  • No critical events in next 24h"
 
+        summary_text = executive_verdict_summary or macro_summary
+
         msg = f"""<b>🏛 XAUUSD MARKET INTELLIGENCE REPORT</b>
 📅 <i>{get_formatted_time()}</i>
 ━━━━━━━━━━━━━━━━━━━━
@@ -72,6 +85,12 @@ class AlertTemplates:
 {dir_emoji} <b>Market Direction:</b> <b>{esc(direction)}</b>
 📊 <b>Direction Score:</b> {score:+.1f} / 100
 🎯 <b>Confidence Level:</b> {confidence:.0f}%
+━━━━━━━━━━━━━━━━━━━━
+🎯 <b>FINAL MARKET VERDICT:</b>
+{verdict_badge}
+
+📝 <b>EXECUTIVE ANALYSIS:</b>
+{esc(summary_text)}
 ━━━━━━━━━━━━━━━━━━━━
 <b>📈 EVIDENCE MATRIX:</b>
 • Macro Score: <b>{macro_score:+.1f}</b>
@@ -87,7 +106,7 @@ class AlertTemplates:
 
 <b>🛡 HIGH LIQUIDITY BELOW:</b>{below_str}
 ━━━━━━━━━━━━━━━━━━━━
-<b>🧠 AI SYNTHESIS ({esc(provider_used)}):</b>
+<b>🧠 DETAILED AI INTELLIGENCE ({esc(provider_used)}):</b>
 {esc(macro_summary)}
 
 {esc(news_summary)}

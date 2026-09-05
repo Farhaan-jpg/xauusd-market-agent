@@ -21,6 +21,8 @@ Respond ONLY with a JSON object matching this schema:
   "direction": "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH" | "INSUFFICIENT DATA",
   "score": <float between -100.0 and +100.0>,
   "confidence": <float between 0.0 and 100.0>,
+  "final_market_verdict": "BULLISH" | "BEARISH" | "NEUTRAL",
+  "executive_verdict_summary": "<Comprehensive executive closing statement concluding why the overall market is in Bullish, Bearish, or Neutral state based on macro, USD, yields, news, and technical liquidity>",
   "dominant_drivers": [<string>, ...],
   "supporting_factors": [<string>, ...],
   "contradicting_factors": [<string>, ...],

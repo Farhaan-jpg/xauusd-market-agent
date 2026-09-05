@@ -121,12 +121,14 @@ class AlertEngine:
                 news_summary=synthesis_output.news_summary,
                 risk_factors=synthesis_output.risk_factors,
                 upcoming_events=upcoming_events,
-                provider_used=provider_used
+                provider_used=provider_used,
+                final_market_verdict=synthesis_output.final_market_verdict,
+                executive_verdict_summary=synthesis_output.executive_verdict_summary
             )
             sent = await self.bot.send_message(msg)
             await Repository.save_alert({
                 "alert_type": "PERIODIC_REPORT",
-                "title": f"Market Intelligence Report - {synthesis_output.direction}",
+                "title": f"Market Intelligence Report - {synthesis_output.direction} ({synthesis_output.final_market_verdict})",
                 "message": msg,
                 "fingerprint": f"REPORT_{int(current_price)}_{synthesis_output.direction}",
                 "sent_successfully": sent

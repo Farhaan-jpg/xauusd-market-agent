@@ -28,10 +28,25 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 async def init_db() -> None:
-    """Initialize database tables asynchronously."""
+    """Initialize database tables asynchronously and ensure schema columns exist."""
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+            def _migrate_columns(connection):
+                try:
+                    cursor = connection.connection.cursor()
+                    cursor.execute("PRAGMA table_info(analysis_runs)")
+                    cols = [col[1] for col in cursor.fetchall()]
+                    if cols:
+                        if "final_market_verdict" not in cols:
+                            cursor.execute("ALTER TABLE analysis_runs ADD COLUMN final_market_verdict VARCHAR(32) DEFAULT 'NEUTRAL'")
+                        if "executive_verdict_summary" not in cols:
+                            cursor.execute("ALTER TABLE analysis_runs ADD COLUMN executive_verdict_summary TEXT DEFAULT ''")
+                except Exception as ex:
+                    pass
+
+            await conn.run_sync(_migrate_columns)
         logger.info("Database initialized successfully.")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")

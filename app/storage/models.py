@@ -112,6 +112,8 @@ class AnalysisRunRecord(Base):
     macro_summary = Column(Text, default="")
     news_summary = Column(Text, default="")
     liquidity_summary = Column(JSON, default=list)
+    final_market_verdict = Column(String(32), default="NEUTRAL")  # BULLISH, BEARISH, NEUTRAL
+    executive_verdict_summary = Column(Text, default="")
     risk_factors = Column(Text, default="")
     data_quality = Column(String(32), default="GOOD")
     provider_used = Column(String(64), default="DETERMINISTIC_FALLBACK")

@@ -19,6 +19,27 @@ from app.data.news.news_provider import NewsProvider
 from app.storage.database import init_db
 from app.storage.repository import Repository
 
+def is_weekend_market_closed(now: Optional[datetime] = None) -> bool:
+    """
+    Checks if global gold/forex markets are closed for the weekend.
+    Gold/Forex market standard closing: Friday 22:00 UTC to Sunday 22:00 UTC (5:00 PM EST).
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    weekday = now.weekday()  # Monday=0, Friday=4, Saturday=5, Sunday=6
+    hour = now.hour
+
+    # Friday after 22:00 UTC
+    if weekday == 4 and hour >= 22:
+        return True
+    # All day Saturday
+    if weekday == 5:
+        return True
+    # Sunday before 22:00 UTC
+    if weekday == 6 and hour < 22:
+        return True
+    return False
+
 class IntelligenceOrchestrator:
     """Orchestrates end-to-end data ingestion, calculations, AI synthesis, persistence, and alerts."""
 
@@ -155,6 +176,8 @@ class IntelligenceOrchestrator:
             "macro_summary": synthesis_output.macro_summary,
             "news_summary": synthesis_output.news_summary,
             "liquidity_summary": synthesis_output.liquidity_summary,
+            "final_market_verdict": synthesis_output.final_market_verdict,
+            "executive_verdict_summary": synthesis_output.executive_verdict_summary,
             "risk_factors": synthesis_output.risk_factors,
             "data_quality": synthesis_output.data_quality,
             "provider_used": provider_used
@@ -175,11 +198,13 @@ class IntelligenceOrchestrator:
         )
 
         elapsed = round((time.time() - cycle_start), 2)
-        logger.info(f"Analysis cycle completed in {elapsed}s. Direction: {synthesis_output.direction} ({synthesis_output.score:+.1f}), Confidence: {synthesis_output.confidence:.0f}% via {provider_used}")
+        logger.info(f"Analysis cycle completed in {elapsed}s. Direction: {synthesis_output.direction} ({synthesis_output.score:+.1f}), Verdict: {synthesis_output.final_market_verdict}, Confidence: {synthesis_output.confidence:.0f}% via {provider_used}")
 
         return {
             "gold_price": current_price,
             "direction": synthesis_output.direction,
+            "final_market_verdict": synthesis_output.final_market_verdict,
+            "executive_verdict_summary": synthesis_output.executive_verdict_summary,
             "score": synthesis_output.score,
             "confidence": synthesis_output.confidence,
             "provider_used": provider_used,
@@ -197,16 +222,22 @@ class IntelligenceOrchestrator:
         self.is_running = True
         await self.initialize()
 
-        logger.info(f"Starting continuous intelligence scheduler (Interval: {settings.ANALYSIS_INTERVAL_SECONDS}s)")
-        # First cycle triggers initial report
+        logger.info(f"Starting continuous intelligence scheduler (Interval: {settings.ANALYSIS_INTERVAL_SECONDS}s, PauseOnWeekends: {settings.PAUSE_ON_WEEKENDS})")
+        # First cycle triggers initial report if not weekend paused
         try:
-            await self.run_cycle(force_report=True)
+            if settings.PAUSE_ON_WEEKENDS and is_weekend_market_closed():
+                logger.info("Weekend market closure detected on startup. Initial monitoring cycle paused until Sunday 22:00 UTC.")
+            else:
+                await self.run_cycle(force_report=True)
         except Exception as e:
             logger.error(f"Error in initial intelligence cycle: {e}")
 
         while self.is_running:
             try:
                 await asyncio.sleep(settings.ANALYSIS_INTERVAL_SECONDS)
+                if settings.PAUSE_ON_WEEKENDS and is_weekend_market_closed():
+                    logger.debug("Weekend detected & PAUSE_ON_WEEKENDS is enabled. Skipping cycle until market reopens.")
+                    continue
                 await self.run_cycle(force_report=False)
             except asyncio.CancelledError:
                 logger.info("Intelligence loop cancelled.")

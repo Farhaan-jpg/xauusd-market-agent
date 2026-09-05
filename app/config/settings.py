@@ -49,11 +49,12 @@ class Settings(BaseSettings):
     ALPHA_VANTAGE_API_KEY: Optional[str] = None
     FINNHUB_API_KEY: Optional[str] = None
 
-    # Intervals (Seconds)
+    # Intervals (Seconds) & Schedule Controls
     ANALYSIS_INTERVAL_SECONDS: int = 180
     MARKET_DATA_INTERVAL_SECONDS: int = 60
     NEWS_FETCH_INTERVAL_SECONDS: int = 180
     ECONOMIC_FETCH_INTERVAL_SECONDS: int = 300
+    PAUSE_ON_WEEKENDS: bool = True
 
     # Liquidity Engine Parameters
     LIQUIDITY_TOLERANCE_PIPS: float = 1.5

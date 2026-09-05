@@ -126,6 +126,13 @@
                         <h2>🧠 AI Synthesis & Contextual Reasoning</h2>
                         <span class="provider-pill" id="ai-provider-tag">Safe Deterministic Engine</span>
                     </div>
+
+                    <!-- FINAL MARKET VERDICT BANNER -->
+                    <div class="verdict-banner" id="verdict-banner">
+                        <div class="box-title">🎯 Final Market Verdict</div>
+                        <div class="verdict-tag" id="final-market-verdict-badge">⚪ NEUTRAL (ANALYZING...)</div>
+                        <div class="verdict-summary" id="final-market-verdict-text">Synthesizing macro, USD, yields, liquidity and news signals...</div>
+                    </div>
                     
                     <div class="drivers-box">
                         <div class="box-title">Dominant Drivers</div>
@@ -336,6 +343,10 @@
                             <label>Liquidity Sensitivity (Pips):</label>
                             <input type="number" id="cfg-liq-tol" step="0.5" min="0.5" max="5.0" value="1.5">
                         </div>
+                    </div>
+                    <div class="form-row-checkbox" style="margin-top: 14px;">
+                        <input type="checkbox" id="cfg-weekend-pause" checked>
+                        <label for="cfg-weekend-pause">🌙 Pause Live Monitoring on Weekends (Saves AI credits & quota when forex/gold markets close Friday 22:00 UTC to Sunday 22:00 UTC)</label>
                     </div>
                 </div>
             </div>
