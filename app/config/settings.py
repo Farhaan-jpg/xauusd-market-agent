@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-flash-latest"
     OPENROUTER_API_KEY: Optional[str] = None
-    OPENROUTER_MODEL: str = "meta-llama/llama-3.1-8b-instruct:free,meta-llama/llama-3.2-3b-instruct:free,qwen/qwen-2.5-72b-instruct:free,deepseek/deepseek-r1"
+    OPENROUTER_MODEL: str = "openrouter/free,google/gemma-4-31b-it:free,nvidia/nemotron-3.5-lightning:free,deepseek/deepseek-r1"
     AI_PRIORITY: str = "gemini_first"  # 'gemini_first', 'openrouter_first', 'deterministic_only'
     AI_TIMEOUT_SECONDS: int = 25
     AI_MAX_RETRIES: int = 3

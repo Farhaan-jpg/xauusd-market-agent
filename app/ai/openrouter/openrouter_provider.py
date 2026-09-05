@@ -9,25 +9,29 @@ from app.config.settings import settings
 from app.core.logging import logger
 
 class OpenRouterProvider(BaseAIProvider):
-    """OpenRouter integration with multi-model fallback across active free and low-cost models."""
+    """OpenRouter integration with dynamic multi-model fallback across active free and low-cost models."""
 
     def __init__(self):
         super().__init__(name="OpenRouter")
         self.api_key = settings.OPENROUTER_API_KEY
         configured_models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
         
-        # Free and resilient production model fallbacks
+        # Live verified free models and popular high-efficiency fallbacks
         fallback_models = [
+            "openrouter/free",
+            "google/gemma-4-31b-it:free",
+            "google/gemma-4-26b-a4b-it:free",
+            "nvidia/nemotron-3.5-lightning:free",
+            "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "minimax/minimax-m3:free",
+            "z-ai/glm-5.2:free",
+            "liquid/lfm-2.5-2.6b:free",
+            "inclusionai/ling-3.0-flash-fin:free",
             "meta-llama/llama-3.1-8b-instruct:free",
-            "meta-llama/llama-3.2-3b-instruct:free",
-            "meta-llama/llama-3.2-1b-instruct:free",
-            "qwen/qwen-2.5-72b-instruct:free",
-            "qwen/qwen-2.5-coder-32b-instruct:free",
-            "mistralai/mistral-small-24b-instruct-2501:free",
-            "google/gemini-2.0-flash-thinking-exp:free",
-            "cognitivecomputations/dolphin3.0-r1-mistral-24b:free",
+            "deepseek/deepseek-r1",
             "meta-llama/llama-3.3-70b-instruct",
-            "deepseek/deepseek-r1"
+            "google/gemini-2.5-flash",
+            "openai/gpt-4o-mini"
         ]
         for fm in fallback_models:
             if fm not in configured_models:
@@ -79,13 +83,15 @@ class OpenRouterProvider(BaseAIProvider):
                     logger.warning(f"OpenRouter model '{model}' not found / unavailable (404). Trying next model...")
                 elif response.status_code == 402:
                     logger.warning(f"OpenRouter model '{model}' requires more credits (402). Trying next model...")
+                elif response.status_code == 429:
+                    logger.warning(f"OpenRouter model '{model}' hit rate limit (429). Trying next model...")
                 else:
                     logger.warning(f"OpenRouter model '{model}' failed ({response.status_code}): {response.text[:200]}")
             except Exception as e:
                 logger.warning(f"OpenRouter model '{model}' exception: {e}")
                 last_error = e
 
-        raise last_error or Exception("All OpenRouter models failed.")
+        raise last_error or Exception("All OpenRouter candidate models failed.")
 
     def _clean_json(self, text: str) -> str:
         text = text.strip()
