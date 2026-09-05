@@ -427,7 +427,34 @@
                     </div>
                 </div>
 
-                <!-- 2. MAIN INSTITUTIONAL LIQUIDITY DEPTH HEATMAP & VOLUME PROFILE -->
+                <!-- 2. PRICE ACTION & TREND CORRIDOR VISUALIZER (NEW INTERACTIVE CHART CANVAS) -->
+                <div class="content-card glass-panel price-corridor-card" style="margin-top: 16px;">
+                    <div class="card-header chart-header-row">
+                        <div class="header-text-group">
+                            <h2>📊 Spot Price Trend & Multi-EMA Dynamic Corridor</h2>
+                            <p class="header-sub">Live visual price action, EMA 20/50/200 structural alignment & ATR volatility envelope</p>
+                        </div>
+                        <div class="chart-controls-group">
+                            <div class="tf-btn-group" id="chart-tf-group">
+                                <button type="button" class="tf-btn" data-tf="M15">M15</button>
+                                <button type="button" class="tf-btn active" data-tf="H1">H1</button>
+                                <button type="button" class="tf-btn" data-tf="H4">H4</button>
+                                <button type="button" class="tf-btn" data-tf="D1">D1</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="price-canvas-wrapper" style="position: relative; width: 100%; height: 260px; background: rgba(10, 14, 23, 0.6); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); overflow: hidden; margin-top: 10px;">
+                        <canvas id="price-action-canvas" width="1000" height="260" style="width: 100%; height: 100%; display: block;"></canvas>
+                        <div class="chart-canvas-overlay" style="position: absolute; top: 10px; left: 14px; display: flex; gap: 14px; font-size: 0.75rem; pointer-events: none;">
+                            <span style="color: #f5b041;">● Price Track</span>
+                            <span style="color: #3b82f6;">— EMA 20 (Fast)</span>
+                            <span style="color: #8b5cf6;">— EMA 50 (Med)</span>
+                            <span style="color: #ef4444;">— EMA 200 (Baseline)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. MAIN INSTITUTIONAL LIQUIDITY DEPTH HEATMAP & VOLUME PROFILE -->
                 <div class="content-card glass-panel liquidity-ladder-card" style="margin-top: 16px;">
                     <div class="card-header chart-header-row">
                         <div class="header-text-group">
@@ -456,6 +483,7 @@
                             <div class="legend-item"><span class="legend-dot gold"></span> Spot Equilibrium Anchor</div>
                             <div class="legend-item"><span class="legend-dot green"></span> Underlying Buy-Side Liquidity (Support / Demand)</div>
                         </div>
+
 
                         <!-- LADDER CHART BODY -->
                         <div class="liquidity-ladder-layout">

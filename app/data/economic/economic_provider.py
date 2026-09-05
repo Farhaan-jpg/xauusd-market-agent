@@ -129,15 +129,15 @@ class EconomicCalendarProvider(BaseDataProvider):
         return "NEUTRAL"
 
     def _generate_synthetic_or_cached_events(self) -> List[Dict[str, Any]]:
-        """Generates baseline upcoming major macro events if network is unavailable."""
+        """Generates baseline upcoming major macro events across the next 7 days."""
         now = datetime.now(timezone.utc)
         baseline = [
             {
                 "fingerprint": hashlib.md5(f"FOMC_Meeting_{now.strftime('%Y%m%d')}".encode()).hexdigest(),
-                "event_name": "FOMC Rate Decision & Statement",
+                "event_name": "FOMC Rate Decision & Policy Statement",
                 "country": "USD",
                 "currency": "USD",
-                "scheduled_time": now + timedelta(days=2, hours=4),
+                "scheduled_time": now + timedelta(days=2, hours=3, minutes=30),
                 "importance": "HIGH",
                 "forecast": "5.25%",
                 "previous": "5.50%",
@@ -149,10 +149,10 @@ class EconomicCalendarProvider(BaseDataProvider):
             },
             {
                 "fingerprint": hashlib.md5(f"US_CPI_{now.strftime('%Y%m%d')}".encode()).hexdigest(),
-                "event_name": "US Consumer Price Index (CPI YoY)",
+                "event_name": "US Consumer Price Index (Core CPI YoY)",
                 "country": "USD",
                 "currency": "USD",
-                "scheduled_time": now + timedelta(days=4, hours=2),
+                "scheduled_time": now + timedelta(days=3, hours=14),
                 "importance": "HIGH",
                 "forecast": "2.8%",
                 "previous": "2.9%",
@@ -161,6 +161,52 @@ class EconomicCalendarProvider(BaseDataProvider):
                 "status": "SCHEDULED",
                 "gold_impact": "UNCERTAIN",
                 "alerted": False
+            },
+            {
+                "fingerprint": hashlib.md5(f"US_JOBLESS_{now.strftime('%Y%m%d')}".encode()).hexdigest(),
+                "event_name": "US Initial Jobless Claims",
+                "country": "USD",
+                "currency": "USD",
+                "scheduled_time": now + timedelta(days=4, hours=14),
+                "importance": "MEDIUM",
+                "forecast": "225K",
+                "previous": "231K",
+                "actual": "",
+                "surprise": None,
+                "status": "SCHEDULED",
+                "gold_impact": "UNCERTAIN",
+                "alerted": False
+            },
+            {
+                "fingerprint": hashlib.md5(f"US_PPI_{now.strftime('%Y%m%d')}".encode()).hexdigest(),
+                "event_name": "US Producer Price Index (PPI MoM)",
+                "country": "USD",
+                "currency": "USD",
+                "scheduled_time": now + timedelta(days=5, hours=14),
+                "importance": "MEDIUM",
+                "forecast": "0.2%",
+                "previous": "0.1%",
+                "actual": "",
+                "surprise": None,
+                "status": "SCHEDULED",
+                "gold_impact": "UNCERTAIN",
+                "alerted": False
+            },
+            {
+                "fingerprint": hashlib.md5(f"US_MICH_SENT_{now.strftime('%Y%m%d')}".encode()).hexdigest(),
+                "event_name": "Univ of Michigan Consumer Sentiment Prelim",
+                "country": "USD",
+                "currency": "USD",
+                "scheduled_time": now + timedelta(days=6, hours=16),
+                "importance": "MEDIUM",
+                "forecast": "68.5",
+                "previous": "67.9",
+                "actual": "",
+                "surprise": None,
+                "status": "SCHEDULED",
+                "gold_impact": "UNCERTAIN",
+                "alerted": False
             }
         ]
         return baseline
+

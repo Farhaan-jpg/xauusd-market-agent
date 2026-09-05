@@ -355,8 +355,8 @@ async def get_recent_news() -> List[Dict[str, Any]]:
 
 @app.get("/api/economic-calendar")
 async def get_economic_calendar() -> List[Dict[str, Any]]:
-    """Returns upcoming economic calendar events."""
-    events = await Repository.get_upcoming_economic_events(hours_ahead=48)
+    """Returns upcoming economic calendar events across the next 7 days."""
+    events = await Repository.get_upcoming_economic_events(hours_ahead=168)
     return [
         {
             "event_name": e.event_name,
@@ -371,6 +371,7 @@ async def get_economic_calendar() -> List[Dict[str, Any]]:
             "gold_impact": e.gold_impact
         } for e in events
     ]
+
 
 @app.get("/api/history")
 async def get_history() -> List[Dict[str, Any]]:
