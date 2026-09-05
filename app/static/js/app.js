@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initSettingsModal();
     initMobileBar();
     initEyeToggles();
-    initTradingViewChart();
+    initLiquidityFilterControls();
     initScenarioSimulator();
 
     // Initial load
@@ -63,14 +63,6 @@ function switchTab(targetId) {
             pane.classList.remove("active");
         }
     });
-
-    // Resize chart if switching to liquidity radar tab
-    if (targetId === "tab-liquidity" && tvChart) {
-        setTimeout(() => {
-            resizeTvChart();
-            if (tvChart && tvCandleSeries) tvChart.timeScale().fitContent();
-        }, 100);
-    }
 }
 
 function initMobileBar() {
@@ -378,11 +370,6 @@ async function fetchDashboardData() {
         if (geoRes && geoRes.ok) updateGeopoliticsUI(await geoRes.json());
         if (cotRes && cotRes.ok) updateInstitutionalCOTUI(await cotRes.json());
 
-        // Refresh active candlestick series if chart initialized
-        if (tvChart && activeTimeframe) {
-            loadCandleData(activeTimeframe);
-        }
-
     } catch (error) {
         console.error("Error refreshing dashboard telemetries:", error);
     }
@@ -658,11 +645,27 @@ function updateMarketUI(market) {
     if (ema200El && market.indicators?.ema_200) ema200El.textContent = Number(market.indicators.ema_200).toFixed(2);
 }
 
+let currentLiqFilter = "ALL";
+let currentLiquidityData = null;
+
+function initLiquidityFilterControls() {
+    const filterButtons = document.querySelectorAll("#liq-filter-group .tf-btn");
+    filterButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            filterButtons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentLiqFilter = btn.getAttribute("data-filter") || "ALL";
+            if (currentLiquidityData) {
+                renderFilteredLiquidityBars(currentLiquidityData);
+            }
+        });
+    });
+}
+
 function updateLiquidityUI(liq) {
     if (!liq) return;
+    currentLiquidityData = liq;
 
-    const aboveList = document.getElementById("liquidity-above-list");
-    const belowList = document.getElementById("liquidity-below-list");
     const totalCountEl = document.getElementById("radar-total-zones");
     const zoneBadgeCount = document.getElementById("liq-zone-count");
     const countAboveEl = document.getElementById("count-above");
@@ -722,12 +725,11 @@ function updateLiquidityUI(liq) {
     const ceilingDesc = document.getElementById("ceiling-desc-val");
 
     if (aboveZones.length > 0) {
-        // Sort closest to spot (lowest price above)
         const sortedAbove = [...aboveZones].sort((a, b) => Number(a.price) - Number(b.price));
         const nearestCeiling = sortedAbove[0];
         if (ceilingPrice) ceilingPrice.textContent = `$${Number(nearestCeiling.price).toFixed(2)}`;
         if (ceilingPips) ceilingPips.textContent = `+${Number(nearestCeiling.distance || 0).toFixed(1)} pips`;
-        if (ceilingDesc) ceilingDesc.textContent = `${nearestCeiling.type?.replace("_", " ") || "Resistance"} • ${Math.round(nearestCeiling.strength || 80)}% Str`;
+        if (ceilingDesc) ceilingDesc.textContent = `${nearestCeiling.type?.replace(/_/g, " ") || "Resistance"} • ${Math.round(nearestCeiling.strength || 80)}% Str`;
     } else {
         if (ceilingPrice) ceilingPrice.textContent = "$----.--";
         if (ceilingPips) ceilingPips.textContent = "+0.0 pips";
@@ -739,73 +741,94 @@ function updateLiquidityUI(liq) {
     const floorDesc = document.getElementById("floor-desc-val");
 
     if (belowZones.length > 0) {
-        // Sort closest to spot (highest price below)
         const sortedBelow = [...belowZones].sort((a, b) => Number(b.price) - Number(a.price));
         const nearestFloor = sortedBelow[0];
         if (floorPrice) floorPrice.textContent = `$${Number(nearestFloor.price).toFixed(2)}`;
         if (floorPips) floorPips.textContent = `-${Number(nearestFloor.distance || 0).toFixed(1)} pips`;
-        if (floorDesc) floorDesc.textContent = `${nearestFloor.type?.replace("_", " ") || "Support"} • ${Math.round(nearestFloor.strength || 80)}% Str`;
+        if (floorDesc) floorDesc.textContent = `${nearestFloor.type?.replace(/_/g, " ") || "Support"} • ${Math.round(nearestFloor.strength || 80)}% Str`;
     } else {
         if (floorPrice) floorPrice.textContent = "$----.--";
         if (floorPips) floorPips.textContent = "-0.0 pips";
         if (floorDesc) floorDesc.textContent = "No immediate underlying floor detected";
     }
 
-    // 3. Render Visual Chart Depth Bars
-    if (aboveList) {
-        if (aboveZones.length === 0) {
-            aboveList.innerHTML = `<div class="zone-empty-state">No high-concentration resistance pools in immediate range.</div>`;
-        } else {
-            // Sort high to low price descending for ladder
-            const sortedAboveDesc = [...aboveZones].sort((a, b) => Number(b.price) - Number(a.price));
-            aboveList.innerHTML = sortedAboveDesc.map(z => {
-                const str = Math.min(100, Math.max(20, Math.round(z.strength || 80)));
-                return `
-                    <div class="zone-depth-row overhead">
-                        <div class="zone-axis-left">
-                            <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
-                            <div class="zone-type-badge">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${escapeHtml(z.timeframe || 'H4')}</div>
-                        </div>
-                        <div class="zone-depth-bar-wrapper" title="Liquidity Pool Strength: ${str}%">
-                            <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
-                            <span class="zone-depth-bar-text">Supply Pool Density: ${str}%</span>
-                        </div>
-                        <div class="zone-axis-right">
-                            <div class="zone-pip-dist mono-num">+${Number(z.distance || 0).toFixed(1)} pips</div>
-                            <span class="zone-strength-pill">${str}% Vol</span>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
+    renderFilteredLiquidityBars(liq);
+}
+
+function renderFilteredLiquidityBars(liq) {
+    const aboveList = document.getElementById("liquidity-above-list");
+    const belowList = document.getElementById("liquidity-below-list");
+    if (!aboveList || !belowList) return;
+
+    let aboveZones = liq.liquidity_above || [];
+    let belowZones = liq.liquidity_below || [];
+
+    // Filter by active selection
+    if (currentLiqFilter === "HIGH") {
+        aboveZones = aboveZones.filter(z => (Number(z.strength) || 80) >= 80);
+        belowZones = belowZones.filter(z => (Number(z.strength) || 80) >= 80);
+    } else if (currentLiqFilter === "FVG") {
+        aboveZones = aboveZones.filter(z => (z.type || "").toUpperCase().includes("FVG") || (z.type || "").toUpperCase().includes("GAP"));
+        belowZones = belowZones.filter(z => (z.type || "").toUpperCase().includes("FVG") || (z.type || "").toUpperCase().includes("GAP"));
+    } else if (currentLiqFilter === "ORDER_BLOCK") {
+        aboveZones = aboveZones.filter(z => !(z.type || "").toUpperCase().includes("FVG"));
+        belowZones = belowZones.filter(z => !(z.type || "").toUpperCase().includes("FVG"));
     }
 
-    if (belowList) {
-        if (belowZones.length === 0) {
-            belowList.innerHTML = `<div class="zone-empty-state">No high-concentration support pools in immediate range.</div>`;
-        } else {
-            // Sort high to low price descending for ladder
-            const sortedBelowDesc = [...belowZones].sort((a, b) => Number(b.price) - Number(a.price));
-            belowList.innerHTML = sortedBelowDesc.map(z => {
-                const str = Math.min(100, Math.max(20, Math.round(z.strength || 80)));
-                return `
-                    <div class="zone-depth-row underlying">
-                        <div class="zone-axis-left">
-                            <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
-                            <div class="zone-type-badge">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${escapeHtml(z.timeframe || 'H4')}</div>
-                        </div>
-                        <div class="zone-depth-bar-wrapper" title="Liquidity Pool Strength: ${str}%">
-                            <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
-                            <span class="zone-depth-bar-text">Demand Pool Density: ${str}%</span>
-                        </div>
-                        <div class="zone-axis-right">
-                            <div class="zone-pip-dist mono-num">-${Number(z.distance || 0).toFixed(1)} pips</div>
-                            <span class="zone-strength-pill">${str}% Vol</span>
-                        </div>
+    // Render Overhead Supply Clusters
+    if (aboveZones.length === 0) {
+        aboveList.innerHTML = `<div class="zone-empty-state">No matching overhead resistance pools found.</div>`;
+    } else {
+        const sortedAbove = [...aboveZones].sort((a, b) => Number(b.price) - Number(a.price));
+        aboveList.innerHTML = sortedAbove.map(z => {
+            const str = Math.min(100, Math.max(25, Math.round(z.strength || 80)));
+            const formattedType = (z.type || "SUPPLY_POOL").replace(/_/g, " ");
+            const isFvg = formattedType.includes("FVG") || formattedType.includes("GAP");
+            return `
+                <div class="zone-depth-row overhead">
+                    <div class="zone-axis-left">
+                        <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
+                        <div class="zone-type-badge ${isFvg ? 'fvg-badge' : ''}">${escapeHtml(formattedType)} • ${escapeHtml(z.timeframe || 'H4')}</div>
                     </div>
-                `;
-            }).join("");
-        }
+                    <div class="zone-depth-bar-wrapper" title="Supply Cluster Density: ${str}%">
+                        <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
+                        <span class="zone-depth-bar-text">Density: ${str}% • Supply Absorption Node</span>
+                    </div>
+                    <div class="zone-axis-right">
+                        <div class="zone-pip-dist mono-num">+${Number(z.distance || 0).toFixed(1)} pips</div>
+                        <span class="zone-strength-pill">${str}% Vol</span>
+                    </div>
+                </div>
+            `;
+        }).join("");
+    }
+
+    // Render Underlying Demand Clusters
+    if (belowZones.length === 0) {
+        belowList.innerHTML = `<div class="zone-empty-state">No matching underlying support pools found.</div>`;
+    } else {
+        const sortedBelow = [...belowZones].sort((a, b) => Number(b.price) - Number(a.price));
+        belowList.innerHTML = sortedBelow.map(z => {
+            const str = Math.min(100, Math.max(25, Math.round(z.strength || 80)));
+            const formattedType = (z.type || "DEMAND_POOL").replace(/_/g, " ");
+            const isFvg = formattedType.includes("FVG") || formattedType.includes("GAP");
+            return `
+                <div class="zone-depth-row underlying">
+                    <div class="zone-axis-left">
+                        <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
+                        <div class="zone-type-badge ${isFvg ? 'fvg-badge' : ''}">${escapeHtml(formattedType)} • ${escapeHtml(z.timeframe || 'H4')}</div>
+                    </div>
+                    <div class="zone-depth-bar-wrapper" title="Demand Cluster Density: ${str}%">
+                        <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
+                        <span class="zone-depth-bar-text">Density: ${str}% • Demand Accumulation Node</span>
+                    </div>
+                    <div class="zone-axis-right">
+                        <div class="zone-pip-dist mono-num">-${Number(z.distance || 0).toFixed(1)} pips</div>
+                        <span class="zone-strength-pill">${str}% Vol</span>
+                    </div>
+                </div>
+            `;
+        }).join("");
     }
 }
 
@@ -954,247 +977,6 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
-}
-
-/* ==============================================================================
-   FEATURE 1: TRADINGVIEW LIGHTWEIGHT CHARTS & LIVE LIQUIDITY OVERLAYS
-   ============================================================================== */
-let tvChart = null;
-let tvCandleSeries = null;
-let tvEma20Series = null;
-let tvEma50Series = null;
-let activeTimeframe = "H1";
-let activePriceLines = [];
-
-function initTradingViewChart() {
-    const container = document.getElementById("tv-chart-viewport");
-    if (!container) return;
-
-    if (typeof window.LightweightCharts === "undefined") {
-        console.warn("LightweightCharts library not yet loaded. Retrying in 500ms...");
-        setTimeout(initTradingViewChart, 500);
-        return;
-    }
-
-    try {
-        tvChart = LightweightCharts.createChart(container, {
-            width: container.clientWidth || 800,
-            height: 480,
-            layout: {
-                background: { color: "#0a0e17" },
-                textColor: "#94a3b8",
-                fontSize: 12,
-                fontFamily: "JetBrains Mono, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
-            },
-            grid: {
-                vertLines: { color: "rgba(255, 255, 255, 0.04)" },
-                horzLines: { color: "rgba(255, 255, 255, 0.04)" }
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: {
-                    color: "rgba(245, 176, 65, 0.5)",
-                    width: 1,
-                    style: LightweightCharts.LineStyle.Dashed,
-                    labelBackgroundColor: "#1e293b"
-                },
-                horzLine: {
-                    color: "rgba(245, 176, 65, 0.5)",
-                    width: 1,
-                    style: LightweightCharts.LineStyle.Dashed,
-                    labelBackgroundColor: "#1e293b"
-                }
-            },
-            rightPriceScale: {
-                borderColor: "rgba(255, 255, 255, 0.08)",
-                scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1
-                }
-            },
-            timeScale: {
-                borderColor: "rgba(255, 255, 255, 0.08)",
-                timeVisible: true,
-                secondsVisible: false
-            }
-        });
-
-        // Candlestick Series
-        tvCandleSeries = tvChart.addCandlestickSeries({
-            upColor: "#00ffaa",
-            downColor: "#ff3b57",
-            borderUpColor: "#00ffaa",
-            borderDownColor: "#ff3b57",
-            wickUpColor: "#00ffaa",
-            wickDownColor: "#ff3b57"
-        });
-
-        // EMA Overlays
-        tvEma20Series = tvChart.addLineSeries({
-            color: "#f5b041",
-            lineWidth: 1,
-            title: "EMA 20"
-        });
-
-        tvEma50Series = tvChart.addLineSeries({
-            color: "#00d2ff",
-            lineWidth: 1,
-            title: "EMA 50"
-        });
-
-        // Subscribe to crosshair move for real-time OHLC info
-        tvChart.subscribeCrosshairMove(param => {
-            const infoEl = document.getElementById("chart-cursor-info");
-            if (!infoEl) return;
-
-            if (!param || !param.time || !param.seriesData.get(tvCandleSeries)) {
-                infoEl.textContent = "Hover over candles for OHLCV & zone details";
-                return;
-            }
-
-            const data = param.seriesData.get(tvCandleSeries);
-            const o = Number(data.open || 0).toFixed(2);
-            const h = Number(data.high || 0).toFixed(2);
-            const l = Number(data.low || 0).toFixed(2);
-            const c = Number(data.close || 0).toFixed(2);
-            const isBull = data.close >= data.open;
-
-            infoEl.innerHTML = `<span>O: <b>${o}</b></span> <span>H: <b>${h}</b></span> <span>L: <b>${l}</b></span> <span>C: <b style="color:${isBull ? 'var(--bullish-green)' : 'var(--bearish-red)'}">${c}</b></span>`;
-        });
-
-        // Timeframe selector buttons
-        const tfButtons = document.querySelectorAll(".tf-btn");
-        tfButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                const tf = btn.getAttribute("data-tf");
-                tfButtons.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-                activeTimeframe = tf;
-                loadCandleData(tf);
-            });
-        });
-
-        // Auto-resize on window resize
-        window.addEventListener("resize", resizeTvChart);
-
-        // Initial candle data load
-        loadCandleData(activeTimeframe);
-
-    } catch (err) {
-        console.error("Error initializing TradingView chart:", err);
-    }
-}
-
-function resizeTvChart() {
-    const container = document.getElementById("tv-chart-viewport");
-    if (container && tvChart) {
-        tvChart.applyOptions({
-            width: container.clientWidth || 800
-        });
-    }
-}
-
-async function loadCandleData(timeframe = "H1") {
-    if (!tvChart || !tvCandleSeries) return;
-
-    try {
-        const res = await fetch(`/api/candles?timeframe=${encodeURIComponent(timeframe)}`);
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const rawCandles = data.candles || [];
-        if (rawCandles.length === 0) return;
-
-        // Sort ascending by time
-        const formattedCandles = rawCandles.map(c => ({
-            time: Math.floor(new Date(c.time).getTime() / 1000),
-            open: Number(c.open),
-            high: Number(c.high),
-            low: Number(c.low),
-            close: Number(c.close)
-        })).sort((a, b) => a.time - b.time);
-
-        // Remove duplicate timestamps if any
-        const uniqueCandles = [];
-        const seen = new Set();
-        for (const c of formattedCandles) {
-            if (!seen.has(c.time)) {
-                seen.add(c.time);
-                uniqueCandles.push(c);
-            }
-        }
-
-        tvCandleSeries.setData(uniqueCandles);
-
-        // Calculate EMA 20 and EMA 50 series
-        if (uniqueCandles.length > 20 && tvEma20Series) {
-            const ema20 = calculateEMA(uniqueCandles, 20);
-            tvEma20Series.setData(ema20);
-        }
-        if (uniqueCandles.length > 50 && tvEma50Series) {
-            const ema50 = calculateEMA(uniqueCandles, 50);
-            tvEma50Series.setData(ema50);
-        }
-
-        // Render Liquidity Overlay Price Lines
-        renderLiquidityOverlays(data.liquidity_overlays || []);
-
-        tvChart.timeScale().fitContent();
-
-    } catch (err) {
-        console.error("Error loading candle data:", err);
-    }
-}
-
-function calculateEMA(candles, period) {
-    const k = 2 / (period + 1);
-    let ema = candles[0].close;
-    const result = [];
-
-    for (let i = 0; i < candles.length; i++) {
-        if (i < period - 1) {
-            ema = (candles[i].close + ema * i) / (i + 1);
-        } else if (i === period - 1) {
-            let sum = 0;
-            for (let j = 0; j < period; j++) sum += candles[j].close;
-            ema = sum / period;
-            result.push({ time: candles[i].time, value: ema });
-        } else {
-            ema = candles[i].close * k + ema * (1 - k);
-            result.push({ time: candles[i].time, value: ema });
-        }
-    }
-    return result;
-}
-
-function renderLiquidityOverlays(overlays) {
-    if (!tvCandleSeries) return;
-
-    // Remove previous price lines
-    activePriceLines.forEach(line => {
-        try {
-            tvCandleSeries.removePriceLine(line);
-        } catch (e) {}
-    });
-    activePriceLines = [];
-
-    // Add new overlay lines for overhead and underlying zones
-    overlays.forEach(zone => {
-        const isOverhead = (zone.type || "").toUpperCase().includes("OVERHEAD") || (zone.type || "").toUpperCase().includes("RESISTANCE");
-        const price = Number(zone.price_high || zone.price_low || zone.price);
-        if (!price || isNaN(price)) return;
-
-        const line = tvCandleSeries.createPriceLine({
-            price: price,
-            color: isOverhead ? "#ff3b57" : "#00ffaa",
-            lineWidth: 1,
-            lineStyle: LightweightCharts.LineStyle.Dashed,
-            axisLabelVisible: true,
-            title: `${zone.label || (isOverhead ? 'SUPPLY POOL' : 'DEMAND POOL')} ($${price.toFixed(1)})`
-        });
-
-        activePriceLines.push(line);
-    });
 }
 
 /* ==============================================================================

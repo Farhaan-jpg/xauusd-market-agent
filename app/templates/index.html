@@ -12,9 +12,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- TradingView Lightweight Charts Library -->
-    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -382,39 +379,11 @@
             </section>
 
             <!-- ========================================================================= -->
-            <!-- TAB 2: LIQUIDITY RADAR (INTERACTIVE CANDLESTICK CHART & DEPTH MAP) -->
+            <!-- TAB 2: LIQUIDITY RADAR (INSTITUTIONAL DEPTH HEATMAP & VOLUME PROFILE) -->
             <!-- ========================================================================= -->
             <section class="tab-pane" id="tab-liquidity" role="tabpanel">
-                <!-- 1. INTERACTIVE TRADINGVIEW CANDLESTICK CHART & OVERLAY VIEWPORT -->
-                <div class="content-card glass-panel chart-card-modern">
-                    <div class="card-header chart-header-row">
-                        <div class="header-text-group">
-                            <h2>📊 Interactive Candlestick Telemetry & Liquidity Zones</h2>
-                            <p class="header-sub">Multi-timeframe price action with dynamic Fair Value Gap & Order Pool overlays</p>
-                        </div>
-                        <div class="chart-controls-group">
-                            <div class="tf-btn-group" id="tf-button-group">
-                                <button type="button" class="tf-btn" data-tf="M5">M5</button>
-                                <button type="button" class="tf-btn" data-tf="M15">M15</button>
-                                <button type="button" class="tf-btn active" data-tf="H1">H1</button>
-                                <button type="button" class="tf-btn" data-tf="H4">H4</button>
-                                <button type="button" class="tf-btn" data-tf="D1">D1</button>
-                            </div>
-                            <div class="chart-indicators-legend">
-                                <span class="chart-legend-pill ema20"><span class="pill-dot"></span> EMA 20</span>
-                                <span class="chart-legend-pill ema50"><span class="pill-dot"></span> EMA 50</span>
-                                <span class="chart-legend-pill ema200"><span class="pill-dot"></span> EMA 200</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chart-canvas-wrapper">
-                        <div id="tv-chart-viewport" class="tv-chart-viewport"></div>
-                        <div class="chart-overlay-info-tag mono-num" id="chart-cursor-info">Hover over chart for OHLCV & zone details</div>
-                    </div>
-                </div>
-
-                <!-- 2. TOP LIQUIDITY METRICS RIBBON -->
-                <div class="liquidity-metrics-grid" style="margin-top: 16px;">
+                <!-- 1. TOP LIQUIDITY METRICS & IMBALANCE RIBBON -->
+                <div class="liquidity-metrics-grid">
                     <!-- 1. IMBALANCE RATIO -->
                     <div class="content-card glass-panel liq-metric-box">
                         <div class="liq-metric-header">
@@ -458,20 +427,28 @@
                     </div>
                 </div>
 
-                <!-- 3. MAIN VISUAL LIQUIDITY DEPTH LADDER & CHART FIGURE -->
+                <!-- 2. MAIN INSTITUTIONAL LIQUIDITY DEPTH HEATMAP & VOLUME PROFILE -->
                 <div class="content-card glass-panel liquidity-ladder-card" style="margin-top: 16px;">
-                    <div class="card-header">
+                    <div class="card-header chart-header-row">
                         <div class="header-text-group">
-                            <h2>📊 Institutional Liquidity Depth Chart & Price Map</h2>
-                            <p class="header-sub">Visual order book depth, fair value gaps, and institutional liquidity clusters</p>
+                            <h2>🌊 Institutional Liquidity Depth Heatmap & Volume Profile</h2>
+                            <p class="header-sub">Horizontal order-book density, institutional accumulation pools, and fair value gaps</p>
                         </div>
-                        <div class="ladder-stats">
-                            <span class="stat-pill">Total Pools: <b id="radar-total-zones" class="mono-num">0</b></span>
-                            <span class="stat-pill">Tolerance: <b id="radar-tolerance-pips" class="mono-num">1.5 pips</b></span>
+                        <div class="chart-controls-group">
+                            <div class="tf-btn-group" id="liq-filter-group">
+                                <button type="button" class="tf-btn active" data-filter="ALL">All Pools</button>
+                                <button type="button" class="tf-btn" data-filter="HIGH">High Density (>80%)</button>
+                                <button type="button" class="tf-btn" data-filter="FVG">FVG Imbalances</button>
+                                <button type="button" class="tf-btn" data-filter="ORDER_BLOCK">Order Clusters</button>
+                            </div>
+                            <div class="ladder-stats">
+                                <span class="stat-pill">Total Nodes: <b id="radar-total-zones" class="mono-num">0</b></span>
+                                <span class="stat-pill">Tolerance: <b id="radar-tolerance-pips" class="mono-num">1.5 pips</b></span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- VISUAL CHART FIGURE CONTAINER -->
+                    <!-- VISUAL HEATMAP FIGURE CONTAINER -->
                     <div class="liquidity-chart-figure">
                         <!-- CHART HEADER LEGEND -->
                         <div class="chart-figure-legend">
@@ -485,7 +462,7 @@
                             <!-- OVERHEAD RESISTANCE & LIQUIDITY ABOVE -->
                             <div class="ladder-section overhead-section">
                                 <div class="ladder-section-header">
-                                    <span class="ladder-tag red">🔺 Overhead Resistance Pools (Supply & Liquidity Above)</span>
+                                    <span class="ladder-tag red">🔺 Overhead Resistance Clusters (Supply Liquidity Above)</span>
                                     <span class="ladder-count" id="count-above">0 Active</span>
                                 </div>
                                 <div class="ladder-chart-bars" id="liquidity-above-list">
@@ -507,7 +484,7 @@
                             <!-- UNDERLYING SUPPORT & LIQUIDITY BELOW -->
                             <div class="ladder-section underlying-section">
                                 <div class="ladder-section-header">
-                                    <span class="ladder-tag green">🔻 Underlying Support Pools (Demand & Liquidity Below)</span>
+                                    <span class="ladder-tag green">🔻 Underlying Support Clusters (Demand Liquidity Below)</span>
                                     <span class="ladder-count" id="count-below">0 Active</span>
                                 </div>
                                 <div class="ladder-chart-bars" id="liquidity-below-list">
