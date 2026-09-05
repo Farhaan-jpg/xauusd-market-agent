@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- TradingView Lightweight Charts Library -->
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -379,11 +382,39 @@
             </section>
 
             <!-- ========================================================================= -->
-            <!-- TAB 2: LIQUIDITY RADAR (VISUAL DEPTH CHART & ORDER FLOW LADDER) -->
+            <!-- TAB 2: LIQUIDITY RADAR (INTERACTIVE CANDLESTICK CHART & DEPTH MAP) -->
             <!-- ========================================================================= -->
             <section class="tab-pane" id="tab-liquidity" role="tabpanel">
-                <!-- TOP LIQUIDITY METRICS RIBBON -->
-                <div class="liquidity-metrics-grid">
+                <!-- 1. INTERACTIVE TRADINGVIEW CANDLESTICK CHART & OVERLAY VIEWPORT -->
+                <div class="content-card glass-panel chart-card-modern">
+                    <div class="card-header chart-header-row">
+                        <div class="header-text-group">
+                            <h2>📊 Interactive Candlestick Telemetry & Liquidity Zones</h2>
+                            <p class="header-sub">Multi-timeframe price action with dynamic Fair Value Gap & Order Pool overlays</p>
+                        </div>
+                        <div class="chart-controls-group">
+                            <div class="tf-btn-group" id="tf-button-group">
+                                <button type="button" class="tf-btn" data-tf="M5">M5</button>
+                                <button type="button" class="tf-btn" data-tf="M15">M15</button>
+                                <button type="button" class="tf-btn active" data-tf="H1">H1</button>
+                                <button type="button" class="tf-btn" data-tf="H4">H4</button>
+                                <button type="button" class="tf-btn" data-tf="D1">D1</button>
+                            </div>
+                            <div class="chart-indicators-legend">
+                                <span class="chart-legend-pill ema20"><span class="pill-dot"></span> EMA 20</span>
+                                <span class="chart-legend-pill ema50"><span class="pill-dot"></span> EMA 50</span>
+                                <span class="chart-legend-pill ema200"><span class="pill-dot"></span> EMA 200</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <div id="tv-chart-viewport" class="tv-chart-viewport"></div>
+                        <div class="chart-overlay-info-tag mono-num" id="chart-cursor-info">Hover over chart for OHLCV & zone details</div>
+                    </div>
+                </div>
+
+                <!-- 2. TOP LIQUIDITY METRICS RIBBON -->
+                <div class="liquidity-metrics-grid" style="margin-top: 16px;">
                     <!-- 1. IMBALANCE RATIO -->
                     <div class="content-card glass-panel liq-metric-box">
                         <div class="liq-metric-header">
@@ -427,8 +458,8 @@
                     </div>
                 </div>
 
-                <!-- MAIN VISUAL LIQUIDITY DEPTH LADDER & CHART FIGURE -->
-                <div class="content-card glass-panel liquidity-ladder-card">
+                <!-- 3. MAIN VISUAL LIQUIDITY DEPTH LADDER & CHART FIGURE -->
+                <div class="content-card glass-panel liquidity-ladder-card" style="margin-top: 16px;">
                     <div class="card-header">
                         <div class="header-text-group">
                             <h2>📊 Institutional Liquidity Depth Chart & Price Map</h2>
@@ -489,11 +520,11 @@
             </section>
 
             <!-- ========================================================================= -->
-            <!-- TAB 3: TECHNICALS & MACRO -->
+            <!-- TAB 3: TECHNICALS, MACRO, GEOPOLITICS & SCENARIO SIMULATOR -->
             <!-- ========================================================================= -->
             <section class="tab-pane" id="tab-technicals" role="tabpanel">
                 <div class="grid-tech-macro">
-                    <!-- TECHNICAL INDICATORS CARD -->
+                    <!-- 1. TECHNICAL INDICATORS CARD -->
                     <div class="content-card glass-panel">
                         <div class="card-header">
                             <div class="header-text-group">
@@ -550,7 +581,7 @@
                         </div>
                     </div>
 
-                    <!-- MACRO CROSS-ASSET TELEMETRY -->
+                    <!-- 2. MACRO CROSS-ASSET TELEMETRY -->
                     <div class="content-card glass-panel">
                         <div class="card-header">
                             <div class="header-text-group">
@@ -594,6 +625,162 @@
                                     <span class="macro-desc">Inflation-adjusted yield correlation with precious metals</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 2: GEOPOLITICAL CEI & INSTITUTIONAL COT CARDS -->
+                <div class="grid-tech-macro" style="margin-top: 16px;">
+                    <!-- 3. GEOPOLITICAL CONFLICT ESCALATION INDEX (CEI) CARD -->
+                    <div class="content-card glass-panel">
+                        <div class="card-header">
+                            <div class="header-text-group">
+                                <h2>🌍 Geopolitical Conflict Escalation Index (CEI)</h2>
+                                <p class="header-sub">Quantitative flashpoint severity & safe-haven risk premium calculation</p>
+                            </div>
+                            <span class="status-pill-lg" id="cei-status-pill">ELEVATED</span>
+                        </div>
+                        <div class="cei-dashboard-body">
+                            <div class="cei-top-stats">
+                                <div class="cei-gauge-box">
+                                    <span class="cei-gauge-title">CONFLICT INDEX</span>
+                                    <span class="cei-score-digits mono-num" id="cei-score-val">--.-</span>
+                                    <span class="cei-score-scale">/ 100 Severity</span>
+                                </div>
+                                <div class="cei-premium-box">
+                                    <span class="cei-gauge-title">SAFE-HAVEN RISK PREMIUM</span>
+                                    <span class="cei-premium-digits mono-num" id="cei-premium-val">+$--.--/oz</span>
+                                    <span class="cei-premium-sub" id="cei-premium-pct">(~--% of Spot Price)</span>
+                                </div>
+                            </div>
+                            <div class="cei-flashpoints-list" id="cei-flashpoints-container">
+                                <div class="flashpoint-loading">Scanning global conflict wires...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. INSTITUTIONAL COT & CENTRAL BANK TRACKER CARD -->
+                    <div class="content-card glass-panel">
+                        <div class="card-header">
+                            <div class="header-text-group">
+                                <h2>🏛 CFTC Commitment of Traders (COT) & Central Banks</h2>
+                                <p class="header-sub">Hedge Fund net positioning & sovereign bullion reserve flows</p>
+                            </div>
+                            <span class="status-pill-lg green" id="cot-bias-pill">ACCUMULATION</span>
+                        </div>
+                        <div class="cot-dashboard-body">
+                            <div class="cot-metrics-grid">
+                                <div class="cot-metric-tile">
+                                    <span class="cot-tile-label">Managed Money Net Longs</span>
+                                    <span class="cot-tile-val mono-num" id="cot-net-contracts">+206,400</span>
+                                    <span class="cot-tile-sub" id="cot-net-delta">+14.2k contracts (4W Δ)</span>
+                                </div>
+                                <div class="cot-metric-tile">
+                                    <span class="cot-tile-label">Long / Short Ratio</span>
+                                    <span class="cot-tile-val mono-num" id="cot-ls-ratio">5.9 : 1</span>
+                                    <span class="cot-tile-sub">74.5% Historical Percentile</span>
+                                </div>
+                                <div class="cot-metric-tile">
+                                    <span class="cot-tile-label">Central Bank Quarterly Pace</span>
+                                    <span class="cot-tile-val mono-num" id="cb-quarterly-tonnes">~295 Tonnes</span>
+                                    <span class="cot-tile-sub">Strategic De-Dollarization Bid</span>
+                                </div>
+                                <div class="cot-metric-tile">
+                                    <span class="cot-tile-label">Total Open Interest</span>
+                                    <span class="cot-tile-val mono-num" id="cot-open-interest">524,000</span>
+                                    <span class="cot-tile-sub">Deep Institutional Liquidity</span>
+                                </div>
+                            </div>
+                            <div class="cot-summary-narrative" id="cot-summary-text">
+                                Loading CFTC institutional positioning report...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ROW 3: MACRO "WHAT-IF" SCENARIO SIMULATOR CARD -->
+                <div class="content-card glass-panel simulator-card" style="margin-top: 16px;">
+                    <div class="card-header">
+                        <div class="header-text-group">
+                            <h2>⚡ Macro "What-If" Scenario Simulator</h2>
+                            <p class="header-sub">Simulate institutional gold price reactions under hypothetical rate, currency, and conflict shocks</p>
+                        </div>
+                        <button type="button" class="btn-ctrl btn-secondary" id="btn-reset-simulator">↺ Reset Baseline</button>
+                    </div>
+                    <div class="simulator-layout">
+                        <!-- LEFT INPUT CONTROLS -->
+                        <div class="sim-inputs-column">
+                            <!-- Slider 1: US 10Y Yield Shock -->
+                            <div class="sim-control-group">
+                                <div class="sim-control-header">
+                                    <label for="sim-yield-shift">US 10Y Yield Shift (bps):</label>
+                                    <span class="sim-val-display mono-num" id="sim-yield-val">0 bps</span>
+                                </div>
+                                <input type="range" id="sim-yield-shift" min="-40" max="40" step="5" value="0" class="sim-slider">
+                                <div class="sim-slider-labels"><span>-40 bps (Dovish)</span><span>0</span><span>+40 bps (Hawkish)</span></div>
+                            </div>
+
+                            <!-- Slider 2: DXY Dollar Shift -->
+                            <div class="sim-control-group">
+                                <div class="sim-control-header">
+                                    <label for="sim-dxy-shift">US Dollar Index (DXY) Shift (%):</label>
+                                    <span class="sim-val-display mono-num" id="sim-dxy-val">0.0%</span>
+                                </div>
+                                <input type="range" id="sim-dxy-shift" min="-3.0" max="3.0" step="0.2" value="0.0" class="sim-slider">
+                                <div class="sim-slider-labels"><span>-3.0% (Weak USD)</span><span>0.0%</span><span>+3.0% (Strong USD)</span></div>
+                            </div>
+
+                            <!-- Slider 3: CPI Inflation Surprise -->
+                            <div class="sim-control-group">
+                                <div class="sim-control-header">
+                                    <label for="sim-cpi-shift">CPI Inflation Surprise (% vs forecast):</label>
+                                    <span class="sim-val-display mono-num" id="sim-cpi-val">0.0%</span>
+                                </div>
+                                <input type="range" id="sim-cpi-shift" min="-0.6" max="0.6" step="0.1" value="0.0" class="sim-slider">
+                                <div class="sim-slider-labels"><span>-0.6% (Cooling)</span><span>0.0%</span><span>+0.6% (Hot CPI)</span></div>
+                            </div>
+
+                            <!-- Dropdown 4: Geopolitical Shock -->
+                            <div class="sim-control-group">
+                                <div class="sim-control-header">
+                                    <label for="sim-geo-shock">Geopolitical Shock Event:</label>
+                                </div>
+                                <select id="sim-geo-shock" class="modern-select">
+                                    <option value="NONE" selected>None (Baseline Status Quo)</option>
+                                    <option value="MODERATE">Moderate Flashpoint Skirmish (+Safe Haven)</option>
+                                    <option value="SEVERE">Acute War / Major Airspace & Strait Blockade (Extreme Surge)</option>
+                                    <option value="DE_ESCALATION">Diplomatic Ceasefire / Peace Accord Signed (-Safe Haven)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT PROJECTED REACTION DASHBOARD -->
+                        <div class="sim-results-column">
+                            <div class="sim-result-hero glass-panel">
+                                <span class="sim-hero-eyebrow">PROJECTED GOLD TARGET PRICE</span>
+                                <div class="sim-hero-price mono-num" id="sim-projected-price">$----.--</div>
+                                <div class="sim-hero-delta mono-num" id="sim-projected-delta">+$0.00 (+0.00%)</div>
+                                <div class="sim-verdict-badge neutral" id="sim-verdict-badge">NEUTRAL CONSOLIDATION</div>
+                            </div>
+                            <div class="sim-breakdown-list">
+                                <div class="sim-breakdown-row">
+                                    <span>Yield Impact:</span>
+                                    <b class="mono-num" id="sim-bk-yield">$0.00</b>
+                                </div>
+                                <div class="sim-breakdown-row">
+                                    <span>USD Dollar Impact:</span>
+                                    <b class="mono-num" id="sim-bk-dxy">$0.00</b>
+                                </div>
+                                <div class="sim-breakdown-row">
+                                    <span>Inflation / CPI Impact:</span>
+                                    <b class="mono-num" id="sim-bk-cpi">$0.00</b>
+                                </div>
+                                <div class="sim-breakdown-row">
+                                    <span>Geopolitical Shock Impact:</span>
+                                    <b class="mono-num" id="sim-bk-geo">$0.00</b>
+                                </div>
+                            </div>
+                            <p class="sim-narrative-note" id="sim-narrative-text">Adjust sliders to simulate multi-factor shocks.</p>
                         </div>
                     </div>
                 </div>

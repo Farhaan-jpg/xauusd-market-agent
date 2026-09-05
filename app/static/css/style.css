@@ -1618,6 +1618,389 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==============================================================================
+   INTERACTIVE CANDLESTICK CHART & OVERLAYS VIEWPORT
+   ============================================================================== */
+.chart-card-modern {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.chart-header-row {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.chart-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.tf-btn-group {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 2px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.tf-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tf-btn:hover {
+    color: var(--text-pure);
+}
+
+.tf-btn.active {
+    background: var(--gold-primary);
+    color: #000;
+    box-shadow: 0 0 10px rgba(245, 176, 65, 0.4);
+}
+
+.chart-indicators-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-legend-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+}
+
+.chart-legend-pill .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.chart-legend-pill.ema20 .pill-dot { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+.chart-legend-pill.ema50 .pill-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+.chart-legend-pill.ema200 .pill-dot { background: #ec4899; box-shadow: 0 0 6px #ec4899; }
+
+.chart-canvas-wrapper {
+    position: relative;
+    background: #0a0c10;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.tv-chart-viewport {
+    height: 400px;
+    width: 100%;
+}
+
+.chart-overlay-info-tag {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: rgba(10, 12, 16, 0.75);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* ==============================================================================
+   GEOPOLITICAL CONFLICT ESCALATION INDEX (CEI) STYLING
+   ============================================================================== */
+.cei-dashboard-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cei-top-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.cei-gauge-box, .cei-premium-box {
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.cei-gauge-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cei-score-digits {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #f59e0b;
+    line-height: 1.1;
+}
+
+.cei-score-scale {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.cei-premium-digits {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--bullish-green);
+    line-height: 1.1;
+}
+
+.cei-premium-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.cei-flashpoints-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flashpoint-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(15, 18, 24, 0.5);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.flashpoint-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.flashpoint-headline {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.flashpoint-score-badge {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* ==============================================================================
+   CFTC COMMITMENT OF TRADERS (COT) STYLING
+   ============================================================================== */
+.cot-dashboard-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cot-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.cot-metric-tile {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cot-tile-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.cot-tile-val {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--text-pure);
+}
+
+.cot-tile-sub {
+    font-size: 0.68rem;
+    color: var(--bullish-green);
+}
+
+.cot-summary-narrative {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--gold-primary);
+}
+
+/* ==============================================================================
+   MACRO "WHAT-IF" SCENARIO SIMULATOR STYLING
+   ============================================================================== */
+.simulator-layout {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.sim-inputs-column {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sim-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sim-control-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sim-val-display {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--gold-primary);
+}
+
+.sim-slider {
+    width: 100%;
+    accent-color: var(--gold-primary);
+    cursor: pointer;
+}
+
+.sim-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+.sim-results-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sim-result-hero {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    border: 1px solid rgba(245, 176, 65, 0.3);
+    background: radial-gradient(circle at center, rgba(245, 176, 65, 0.08) 0%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.sim-hero-eyebrow {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--gold-primary);
+}
+
+.sim-hero-price {
+    font-size: 2.1rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.02em;
+}
+
+.sim-hero-delta {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--bullish-green);
+}
+
+.sim-verdict-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+.sim-verdict-badge.bullish { background: var(--bullish-bg); color: var(--bullish-green); border: 1px solid var(--bullish-border); }
+.sim-verdict-badge.bearish { background: var(--bearish-bg); color: var(--bearish-red); border: 1px solid var(--bearish-border); }
+.sim-verdict-badge.neutral { background: var(--neutral-bg); color: var(--neutral-blue); border: 1px solid var(--neutral-border); }
+
+.sim-breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.sim-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.sim-breakdown-row b {
+    color: var(--text-pure);
+}
+
+.sim-narrative-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.35;
+}
+
+
+/* ==============================================================================
    TAB 4: CALENDAR & NEWS
    ============================================================================== */
 .grid-cal-news {

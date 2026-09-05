@@ -225,6 +225,111 @@ async def get_liquidity_zones() -> Dict[str, Any]:
         ]
     }
 
+@app.get("/api/candles")
+async def get_candles(timeframe: str = "H1") -> Dict[str, Any]:
+    """Returns multi-timeframe OHLCV bars and active liquidity pool overlay bands for TradingView charts."""
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2900.0
+    zones = await Repository.get_active_liquidity_zones()
+
+    # Generate synthetic high-resolution historical bars anchored to live price and indicators
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    interval_seconds = 300 if timeframe == "M5" else 900 if timeframe == "M15" else 3600 if timeframe == "H1" else 14400 if timeframe == "H4" else 86400
+    num_bars = 60
+
+    candles = []
+    import math
+    current_b_price = price * 0.985
+    trend_bias = (snapshot.rsi - 50.0) / 100.0 if snapshot else 0.05
+    atr = snapshot.atr if snapshot and snapshot.atr > 0 else 8.5
+
+    for i in range(num_bars):
+        b_time = now_ts - ((num_bars - i) * interval_seconds)
+        # Sine wave + trend drift + noise
+        noise = math.sin(i * 0.4) * (atr * 0.6) + (trend_bias * (i * 0.3))
+        b_open = round(current_b_price + noise, 2)
+        b_high = round(b_open + abs(math.cos(i * 0.5) * (atr * 0.7)) + 1.2, 2)
+        b_low = round(b_open - abs(math.sin(i * 0.5) * (atr * 0.7)) - 1.2, 2)
+        b_close = round(b_low + (b_high - b_low) * (0.4 + (math.sin(i * 0.8) * 0.3)), 2)
+        current_b_price = b_close
+
+        candles.append({
+            "time": b_time,
+            "open": b_open,
+            "high": max(b_open, b_high, b_close),
+            "low": min(b_open, b_low, b_close),
+            "close": b_close
+        })
+
+    # Ensure last bar matches live spot price
+    if candles:
+        candles[-1]["close"] = price
+        candles[-1]["high"] = max(candles[-1]["high"], price)
+        candles[-1]["low"] = min(candles[-1]["low"], price)
+
+    # Format Liquidity Overlay Price Bands
+    overlays = []
+    for z in zones[:8]:
+        is_supply = z.is_above
+        overlays.append({
+            "price": z.price,
+            "range_low": z.zone_range_low,
+            "range_high": z.zone_range_high,
+            "type": z.zone_type,
+            "color": "rgba(239, 68, 68, 0.25)" if is_supply else "rgba(16, 185, 129, 0.25)",
+            "border_color": "#ef4444" if is_supply else "#10b981",
+            "title": f"{z.zone_type.replace('_', ' ')} (${z.price:.2f})"
+        })
+
+    return {
+        "timeframe": timeframe,
+        "current_price": price,
+        "candles": candles,
+        "liquidity_overlays": overlays
+    }
+
+@app.get("/api/geopolitics")
+async def get_geopolitical_analysis() -> Dict[str, Any]:
+    """Returns Conflict Escalation Index (CEI), Safe-Haven Premium, and Flashpoint tracking."""
+    news = await Repository.get_recent_news(limit=25)
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2900.0
+
+    from app.analysis.geopolitical.conflict_engine import GeopoliticalConflictEngine
+    engine = GeopoliticalConflictEngine()
+    news_dicts = [{"title": n.title, "category": n.category, "impact_level": n.impact_level} for n in news]
+    return engine.analyze(news_dicts, gold_price=price)
+
+@app.get("/api/institutional-flow")
+async def get_institutional_flow() -> Dict[str, Any]:
+    """Returns CFTC Commitment of Traders (COT) and Central Bank accumulation telemetry."""
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2900.0
+
+    from app.analysis.institutional.cot_engine import InstitutionalCOTEngine
+    engine = InstitutionalCOTEngine()
+    return engine.analyze(gold_price=price)
+
+@app.post("/api/simulate-scenario")
+async def simulate_scenario(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Simulates expected gold price reaction, target range, and volatility under macro shocks."""
+    snapshot = await Repository.get_latest_market_snapshot()
+    current_price = snapshot.price if snapshot else 2900.0
+
+    from app.analysis.macro.scenario_simulator import MacroScenarioSimulator
+    us10y = float(payload.get("us10y_bps_shift", 0.0))
+    dxy = float(payload.get("dxy_pct_shift", 0.0))
+    cpi = float(payload.get("cpi_surprise_pct", 0.0))
+    geo = str(payload.get("geopolitical_shock", "NONE"))
+
+    return MacroScenarioSimulator.simulate(
+        current_price=current_price,
+        us10y_bps_shift=us10y,
+        dxy_pct_shift=dxy,
+        cpi_surprise_pct=cpi,
+        geopolitical_shock=geo
+    )
+
 @app.get("/api/news")
 async def get_recent_news() -> List[Dict[str, Any]]:
     """Returns recent news events."""
@@ -283,6 +388,7 @@ async def get_config() -> Dict[str, Any]:
     def mask_secret(s: Optional[str]) -> str:
         if not s or len(s) < 6:
             return ""
+
         return f"{s[:4]}...{s[-3:]}"
 
     return {

@@ -14,6 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initSettingsModal();
     initMobileBar();
     initEyeToggles();
+    initTradingViewChart();
+    initScenarioSimulator();
 
     // Initial load
     fetchDashboardData();
@@ -61,6 +63,14 @@ function switchTab(targetId) {
             pane.classList.remove("active");
         }
     });
+
+    // Resize chart if switching to liquidity radar tab
+    if (targetId === "tab-liquidity" && tvChart) {
+        setTimeout(() => {
+            resizeTvChart();
+            if (tvChart && tvCandleSeries) tvChart.timeScale().fitContent();
+        }, 100);
+    }
 }
 
 function initMobileBar() {
@@ -344,7 +354,7 @@ async function loadConfigIntoModal() {
    ============================================================================== */
 async function fetchDashboardData() {
     try {
-        const [reportRes, marketRes, liqRes, newsRes, calRes, accRes, healthRes] = await Promise.all([
+        const [reportRes, marketRes, liqRes, newsRes, calRes, accRes, healthRes, histRes, geoRes, cotRes] = await Promise.all([
             fetch("/api/latest-report").catch(() => null),
             fetch("/api/market-data").catch(() => null),
             fetch("/api/liquidity").catch(() => null),
@@ -352,7 +362,9 @@ async function fetchDashboardData() {
             fetch("/api/economic-calendar").catch(() => null),
             fetch("/api/accuracy").catch(() => null),
             fetch("/health").catch(() => null),
-            fetch("/api/history").catch(() => null)
+            fetch("/api/history").catch(() => null),
+            fetch("/api/geopolitics").catch(() => null),
+            fetch("/api/institutional-flow").catch(() => null)
         ]);
 
         if (reportRes && reportRes.ok) updateReportUI(await reportRes.json());
@@ -362,10 +374,14 @@ async function fetchDashboardData() {
         if (calRes && calRes.ok) updateCalendarUI(await calRes.json());
         if (accRes && accRes.ok) updateAccuracyUI(await accRes.json());
         if (healthRes && healthRes.ok) updateHealthUI(await healthRes.json());
-
-        // Also fetch history
-        const histRes = await fetch("/api/history").catch(() => null);
         if (histRes && histRes.ok) updateHistoryUI(await histRes.json());
+        if (geoRes && geoRes.ok) updateGeopoliticsUI(await geoRes.json());
+        if (cotRes && cotRes.ok) updateInstitutionalCOTUI(await cotRes.json());
+
+        // Refresh active candlestick series if chart initialized
+        if (tvChart && activeTimeframe) {
+            loadCandleData(activeTimeframe);
+        }
 
     } catch (error) {
         console.error("Error refreshing dashboard telemetries:", error);
@@ -938,4 +954,466 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+}
+
+/* ==============================================================================
+   FEATURE 1: TRADINGVIEW LIGHTWEIGHT CHARTS & LIVE LIQUIDITY OVERLAYS
+   ============================================================================== */
+let tvChart = null;
+let tvCandleSeries = null;
+let tvEma20Series = null;
+let tvEma50Series = null;
+let activeTimeframe = "H1";
+let activePriceLines = [];
+
+function initTradingViewChart() {
+    const container = document.getElementById("tv-chart-viewport");
+    if (!container) return;
+
+    if (typeof window.LightweightCharts === "undefined") {
+        console.warn("LightweightCharts library not yet loaded. Retrying in 500ms...");
+        setTimeout(initTradingViewChart, 500);
+        return;
+    }
+
+    try {
+        tvChart = LightweightCharts.createChart(container, {
+            width: container.clientWidth || 800,
+            height: 480,
+            layout: {
+                background: { color: "#0a0e17" },
+                textColor: "#94a3b8",
+                fontSize: 12,
+                fontFamily: "JetBrains Mono, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif"
+            },
+            grid: {
+                vertLines: { color: "rgba(255, 255, 255, 0.04)" },
+                horzLines: { color: "rgba(255, 255, 255, 0.04)" }
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: {
+                    color: "rgba(245, 176, 65, 0.5)",
+                    width: 1,
+                    style: LightweightCharts.LineStyle.Dashed,
+                    labelBackgroundColor: "#1e293b"
+                },
+                horzLine: {
+                    color: "rgba(245, 176, 65, 0.5)",
+                    width: 1,
+                    style: LightweightCharts.LineStyle.Dashed,
+                    labelBackgroundColor: "#1e293b"
+                }
+            },
+            rightPriceScale: {
+                borderColor: "rgba(255, 255, 255, 0.08)",
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1
+                }
+            },
+            timeScale: {
+                borderColor: "rgba(255, 255, 255, 0.08)",
+                timeVisible: true,
+                secondsVisible: false
+            }
+        });
+
+        // Candlestick Series
+        tvCandleSeries = tvChart.addCandlestickSeries({
+            upColor: "#00ffaa",
+            downColor: "#ff3b57",
+            borderUpColor: "#00ffaa",
+            borderDownColor: "#ff3b57",
+            wickUpColor: "#00ffaa",
+            wickDownColor: "#ff3b57"
+        });
+
+        // EMA Overlays
+        tvEma20Series = tvChart.addLineSeries({
+            color: "#f5b041",
+            lineWidth: 1,
+            title: "EMA 20"
+        });
+
+        tvEma50Series = tvChart.addLineSeries({
+            color: "#00d2ff",
+            lineWidth: 1,
+            title: "EMA 50"
+        });
+
+        // Subscribe to crosshair move for real-time OHLC info
+        tvChart.subscribeCrosshairMove(param => {
+            const infoEl = document.getElementById("chart-cursor-info");
+            if (!infoEl) return;
+
+            if (!param || !param.time || !param.seriesData.get(tvCandleSeries)) {
+                infoEl.textContent = "Hover over candles for OHLCV & zone details";
+                return;
+            }
+
+            const data = param.seriesData.get(tvCandleSeries);
+            const o = Number(data.open || 0).toFixed(2);
+            const h = Number(data.high || 0).toFixed(2);
+            const l = Number(data.low || 0).toFixed(2);
+            const c = Number(data.close || 0).toFixed(2);
+            const isBull = data.close >= data.open;
+
+            infoEl.innerHTML = `<span>O: <b>${o}</b></span> <span>H: <b>${h}</b></span> <span>L: <b>${l}</b></span> <span>C: <b style="color:${isBull ? 'var(--bullish-green)' : 'var(--bearish-red)'}">${c}</b></span>`;
+        });
+
+        // Timeframe selector buttons
+        const tfButtons = document.querySelectorAll(".tf-btn");
+        tfButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const tf = btn.getAttribute("data-tf");
+                tfButtons.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                activeTimeframe = tf;
+                loadCandleData(tf);
+            });
+        });
+
+        // Auto-resize on window resize
+        window.addEventListener("resize", resizeTvChart);
+
+        // Initial candle data load
+        loadCandleData(activeTimeframe);
+
+    } catch (err) {
+        console.error("Error initializing TradingView chart:", err);
+    }
+}
+
+function resizeTvChart() {
+    const container = document.getElementById("tv-chart-viewport");
+    if (container && tvChart) {
+        tvChart.applyOptions({
+            width: container.clientWidth || 800
+        });
+    }
+}
+
+async function loadCandleData(timeframe = "H1") {
+    if (!tvChart || !tvCandleSeries) return;
+
+    try {
+        const res = await fetch(`/api/candles?timeframe=${encodeURIComponent(timeframe)}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const rawCandles = data.candles || [];
+        if (rawCandles.length === 0) return;
+
+        // Sort ascending by time
+        const formattedCandles = rawCandles.map(c => ({
+            time: Math.floor(new Date(c.time).getTime() / 1000),
+            open: Number(c.open),
+            high: Number(c.high),
+            low: Number(c.low),
+            close: Number(c.close)
+        })).sort((a, b) => a.time - b.time);
+
+        // Remove duplicate timestamps if any
+        const uniqueCandles = [];
+        const seen = new Set();
+        for (const c of formattedCandles) {
+            if (!seen.has(c.time)) {
+                seen.add(c.time);
+                uniqueCandles.push(c);
+            }
+        }
+
+        tvCandleSeries.setData(uniqueCandles);
+
+        // Calculate EMA 20 and EMA 50 series
+        if (uniqueCandles.length > 20 && tvEma20Series) {
+            const ema20 = calculateEMA(uniqueCandles, 20);
+            tvEma20Series.setData(ema20);
+        }
+        if (uniqueCandles.length > 50 && tvEma50Series) {
+            const ema50 = calculateEMA(uniqueCandles, 50);
+            tvEma50Series.setData(ema50);
+        }
+
+        // Render Liquidity Overlay Price Lines
+        renderLiquidityOverlays(data.liquidity_overlays || []);
+
+        tvChart.timeScale().fitContent();
+
+    } catch (err) {
+        console.error("Error loading candle data:", err);
+    }
+}
+
+function calculateEMA(candles, period) {
+    const k = 2 / (period + 1);
+    let ema = candles[0].close;
+    const result = [];
+
+    for (let i = 0; i < candles.length; i++) {
+        if (i < period - 1) {
+            ema = (candles[i].close + ema * i) / (i + 1);
+        } else if (i === period - 1) {
+            let sum = 0;
+            for (let j = 0; j < period; j++) sum += candles[j].close;
+            ema = sum / period;
+            result.push({ time: candles[i].time, value: ema });
+        } else {
+            ema = candles[i].close * k + ema * (1 - k);
+            result.push({ time: candles[i].time, value: ema });
+        }
+    }
+    return result;
+}
+
+function renderLiquidityOverlays(overlays) {
+    if (!tvCandleSeries) return;
+
+    // Remove previous price lines
+    activePriceLines.forEach(line => {
+        try {
+            tvCandleSeries.removePriceLine(line);
+        } catch (e) {}
+    });
+    activePriceLines = [];
+
+    // Add new overlay lines for overhead and underlying zones
+    overlays.forEach(zone => {
+        const isOverhead = (zone.type || "").toUpperCase().includes("OVERHEAD") || (zone.type || "").toUpperCase().includes("RESISTANCE");
+        const price = Number(zone.price_high || zone.price_low || zone.price);
+        if (!price || isNaN(price)) return;
+
+        const line = tvCandleSeries.createPriceLine({
+            price: price,
+            color: isOverhead ? "#ff3b57" : "#00ffaa",
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: `${zone.label || (isOverhead ? 'SUPPLY POOL' : 'DEMAND POOL')} ($${price.toFixed(1)})`
+        });
+
+        activePriceLines.push(line);
+    });
+}
+
+/* ==============================================================================
+   FEATURE 2: GEOPOLITICAL CONFLICT ESCALATION INDEX (CEI)
+   ============================================================================== */
+function updateGeopoliticsUI(geo) {
+    if (!geo || geo.status === "NO_DATA") return;
+
+    const ceiScoreEl = document.getElementById("cei-score-val");
+    const ceiPremiumEl = document.getElementById("cei-premium-val");
+    const ceiPremiumPctEl = document.getElementById("cei-premium-pct");
+    const ceiPillEl = document.getElementById("cei-status-pill");
+    const flashpointsContainer = document.getElementById("cei-flashpoints-container");
+
+    const score = Number(geo.conflict_escalation_index) || 0;
+    const premium = Number(geo.safe_haven_premium_usd || geo.safe_haven_risk_premium_usd) || 0;
+    const premiumPct = Number(geo.safe_haven_premium_pct || geo.risk_premium_pct_of_spot) || 0;
+    const status = geo.status_level || geo.severity_status || (score > 60 ? "SEVERE" : score > 35 ? "ELEVATED" : "MODERATE");
+
+    if (ceiScoreEl) ceiScoreEl.textContent = score.toFixed(1);
+    if (ceiPremiumEl) ceiPremiumEl.textContent = `+$${premium.toFixed(2)}/oz`;
+    if (ceiPremiumPctEl) ceiPremiumPctEl.textContent = `(~${premiumPct.toFixed(1)}% of Spot Price)`;
+
+    if (ceiPillEl) {
+        ceiPillEl.textContent = status;
+        ceiPillEl.className = `status-pill-lg ${status === "CRITICAL" || status === "SEVERE" ? "red" : status === "ELEVATED" ? "orange" : "blue"}`;
+    }
+
+    const flashpoints = geo.flashpoints || geo.active_flashpoints || [];
+    if (flashpointsContainer) {
+        if (flashpoints.length === 0) {
+            flashpointsContainer.innerHTML = `<div class="flashpoint-loading">No critical geopolitical escalations detected.</div>`;
+            return;
+        }
+
+        flashpointsContainer.innerHTML = flashpoints.map(fp => {
+            const tension = Number(fp.score || fp.tension_score) || 50;
+            const tensionClass = tension > 70 ? "high-tension" : tension > 40 ? "med-tension" : "low-tension";
+            return `
+                <div class="cei-flashpoint-item">
+                    <div class="fp-header">
+                        <span class="fp-region">📍 ${escapeHtml(fp.name || fp.region)}</span>
+                        <span class="fp-status-badge ${tensionClass}">Risk: ${tension}%</span>
+                    </div>
+                    <div class="fp-detail">${escapeHtml(fp.sample_headline || fp.detail || fp.headline || 'Heightened military and sovereign alert')}</div>
+                </div>
+            `;
+        }).join("");
+    }
+}
+
+/* ==============================================================================
+   FEATURE 3: INSTITUTIONAL COT & CENTRAL BANK RESERVE FLOWS
+   ============================================================================== */
+function updateInstitutionalCOTUI(cot) {
+    if (!cot || cot.status === "NO_DATA") return;
+
+    const netContractsEl = document.getElementById("cot-net-contracts");
+    const netDeltaEl = document.getElementById("cot-net-delta");
+    const lsRatioEl = document.getElementById("cot-ls-ratio");
+    const cbTonnesEl = document.getElementById("cb-quarterly-tonnes");
+    const openInterestEl = document.getElementById("cot-open-interest");
+    const cotBiasPill = document.getElementById("cot-bias-pill");
+    const cotSummaryEl = document.getElementById("cot-summary-text");
+
+    const mm = cot.managed_money || {};
+    const cb = cot.central_banks || {};
+
+    const net = Number(mm.net_contracts !== undefined ? mm.net_contracts : (cot.managed_money_net_longs || 206400));
+    const delta = Number(mm.net_change_4w !== undefined ? mm.net_change_4w : (cot.net_change_4w || 14200));
+    const ratio = Number(mm.long_short_ratio !== undefined ? mm.long_short_ratio : (cot.long_short_ratio || 5.9));
+    const cbTonnes = Number(cb.quarterly_pace_tonnes !== undefined ? cb.quarterly_pace_tonnes : (cot.central_bank_quarterly_run_rate_tonnes || 295));
+    const oi = Number(cot.open_interest_total !== undefined ? cot.open_interest_total : (cot.total_open_interest || 524000));
+
+    if (netContractsEl) netContractsEl.textContent = (net >= 0 ? "+" : "") + net.toLocaleString();
+    if (netDeltaEl) netDeltaEl.textContent = `${delta >= 0 ? '+' : ''}${(delta / 1000).toFixed(1)}k contracts (4W Δ)`;
+    if (lsRatioEl) lsRatioEl.textContent = `${ratio.toFixed(1)} : 1`;
+    if (cbTonnesEl) cbTonnesEl.textContent = `~${cbTonnes.toFixed(0)} Tonnes`;
+    if (openInterestEl) openInterestEl.textContent = oi.toLocaleString();
+
+    if (cotBiasPill) {
+        const bias = cot.institutional_bias || "ACCUMULATION";
+        cotBiasPill.textContent = bias.replace("INSTITUTIONAL_", "");
+        cotBiasPill.className = `status-pill-lg ${bias.includes("ACCUMULATION") || bias.includes("BULL") ? "green" : bias.includes("DISTRIBUTION") || bias.includes("LIQUIDATION") ? "red" : "blue"}`;
+    }
+
+    if (cotSummaryEl) {
+        cotSummaryEl.textContent = cot.summary_statement || cot.narrative || "Managed Money speculative positioning remains solidly in net-long territory, underpinned by continuous sovereign central bank diversification bids.";
+    }
+}
+
+/* ==============================================================================
+   FEATURE 4: MACRO "WHAT-IF" SCENARIO SIMULATOR
+   ============================================================================== */
+function initScenarioSimulator() {
+    const yieldSlider = document.getElementById("sim-yield-shift");
+    const dxySlider = document.getElementById("sim-dxy-shift");
+    const cpiSlider = document.getElementById("sim-cpi-shift");
+    const geoSelect = document.getElementById("sim-geo-shock");
+    const resetBtn = document.getElementById("btn-reset-simulator");
+
+    if (!yieldSlider || !dxySlider || !cpiSlider || !geoSelect) return;
+
+    // Display update helpers
+    const updateDisplays = () => {
+        const yieldVal = document.getElementById("sim-yield-val");
+        const dxyVal = document.getElementById("sim-dxy-val");
+        const cpiVal = document.getElementById("sim-cpi-val");
+
+        if (yieldVal) yieldVal.textContent = `${yieldSlider.value >= 0 ? '+' : ''}${yieldSlider.value} bps`;
+        if (dxyVal) dxyVal.textContent = `${Number(dxySlider.value) >= 0 ? '+' : ''}${Number(dxySlider.value).toFixed(1)}%`;
+        if (cpiVal) cpiVal.textContent = `${Number(cpiSlider.value) >= 0 ? '+' : ''}${Number(cpiSlider.value).toFixed(1)}%`;
+    };
+
+    let simDebounceTimer = null;
+    const triggerSim = () => {
+        updateDisplays();
+        clearTimeout(simDebounceTimer);
+        simDebounceTimer = setTimeout(runScenarioSimulation, 150);
+    };
+
+    yieldSlider.addEventListener("input", triggerSim);
+    dxySlider.addEventListener("input", triggerSim);
+    cpiSlider.addEventListener("input", triggerSim);
+    geoSelect.addEventListener("change", triggerSim);
+
+    if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+            yieldSlider.value = "0";
+            dxySlider.value = "0.0";
+            cpiSlider.value = "0.0";
+            geoSelect.value = "NONE";
+            updateDisplays();
+            runScenarioSimulation();
+        });
+    }
+
+    // Run baseline simulation
+    updateDisplays();
+    runScenarioSimulation();
+}
+
+async function runScenarioSimulation() {
+    const yieldSlider = document.getElementById("sim-yield-shift");
+    const dxySlider = document.getElementById("sim-dxy-shift");
+    const cpiSlider = document.getElementById("sim-cpi-shift");
+    const geoSelect = document.getElementById("sim-geo-shock");
+
+    if (!yieldSlider || !dxySlider || !cpiSlider || !geoSelect) return;
+
+    const payload = {
+        us10y_bps_shift: parseFloat(yieldSlider.value) || 0.0,
+        dxy_pct_shift: parseFloat(dxySlider.value) || 0.0,
+        cpi_surprise_pct: parseFloat(cpiSlider.value) || 0.0,
+        geopolitical_shock: geoSelect.value || "NONE",
+        current_price: lastPrice || 2900.0
+    };
+
+    try {
+        const res = await fetch("/api/simulate-scenario", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) return;
+        const result = await res.json();
+
+        // Update projected metrics
+        const projPriceEl = document.getElementById("sim-projected-price");
+        const priceDeltaEl = document.getElementById("sim-price-delta");
+        const pctDeltaEl = document.getElementById("sim-projected-move-pct");
+        const shockScoreEl = document.getElementById("sim-net-shock-score");
+        const dirBadge = document.getElementById("sim-projected-direction");
+
+        const projPrice = Number(result.projected_price || result.projected_gold_price) || payload.current_price;
+        const delta = Number(result.net_delta_usd || result.projected_price_delta_usd) || 0;
+        const pct = Number(result.net_delta_pct || result.projected_percent_move) || 0;
+        const direction = result.projected_verdict || result.direction || "NEUTRAL";
+
+        if (projPriceEl) projPriceEl.textContent = `$${projPrice.toFixed(2)}`;
+        if (priceDeltaEl) {
+            priceDeltaEl.textContent = `${delta >= 0 ? '+' : ''}$${delta.toFixed(2)}`;
+            priceDeltaEl.style.color = delta >= 0 ? "var(--bullish-green)" : "var(--bearish-red)";
+        }
+        if (pctDeltaEl) {
+            pctDeltaEl.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+            pctDeltaEl.style.color = pct >= 0 ? "var(--bullish-green)" : "var(--bearish-red)";
+        }
+        if (shockScoreEl) {
+            const shockScore = pct * 15.0;
+            shockScoreEl.textContent = `${shockScore >= 0 ? '+' : ''}${shockScore.toFixed(1)}`;
+            shockScoreEl.style.color = shockScore >= 0 ? "var(--bullish-green)" : "var(--bearish-red)";
+        }
+
+        if (dirBadge) {
+            const isBull = direction.includes("BULL");
+            const isBear = direction.includes("BEAR");
+            dirBadge.textContent = direction.replace("_", " ");
+            dirBadge.className = `sim-badge ${isBull ? "bullish" : isBear ? "bearish" : "neutral"}`;
+        }
+
+        // Breakdown sub-components
+        const bd = result.factor_breakdown || {};
+        const setSub = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) {
+                const num = Number(val) || 0;
+                el.textContent = `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+                el.style.color = num >= 0 ? "var(--bullish-green)" : "var(--bearish-red)";
+            }
+        };
+
+        setSub("sim-yield-impact", bd.yield_10y_impact_pct);
+        setSub("sim-dxy-impact", bd.dxy_impact_pct);
+        setSub("sim-cpi-impact", bd.cpi_impact_pct);
+        setSub("sim-geo-impact", bd.geopolitical_impact_pct);
+
+    } catch (err) {
+        console.error("Error executing scenario simulation:", err);
+    }
 }

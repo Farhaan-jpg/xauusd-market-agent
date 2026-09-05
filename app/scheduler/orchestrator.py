@@ -5,6 +5,8 @@ import time
 from typing import Any, Dict, Optional
 from app.ai.synthesizer import AISynthesizer
 from app.alerts.engine import AlertEngine
+from app.analysis.geopolitical.conflict_engine import GeopoliticalConflictEngine
+from app.analysis.institutional.cot_engine import InstitutionalCOTEngine
 from app.analysis.liquidity.liquidity_engine import LiquidityEngine
 from app.analysis.macro.macro_engine import MacroEngine
 from app.analysis.news.news_engine import NewsEngine
@@ -54,10 +56,13 @@ class IntelligenceOrchestrator:
         self.macro_engine = MacroEngine()
         self.news_engine = NewsEngine()
         self.direction_engine = MarketDirectionEngine()
+        self.conflict_engine = GeopoliticalConflictEngine()
+        self.cot_engine = InstitutionalCOTEngine()
 
         self.synthesizer = AISynthesizer()
         self.alert_engine = AlertEngine()
         self.is_running = False
+
 
     async def initialize(self) -> None:
         """Initializes database schema and prepares state."""
@@ -95,6 +100,10 @@ class IntelligenceOrchestrator:
         macro_analysis = self.macro_engine.analyze(macro_data)
         news_analysis = self.news_engine.analyze(news_data)
 
+        current_price = market_analysis.get("price", 0.0)
+        geopolitical_analysis = self.conflict_engine.analyze(news_data, gold_price=current_price if current_price > 0 else 2900.0)
+        institutional_analysis = self.cot_engine.analyze(gold_price=current_price if current_price > 0 else 2900.0, macro_data=macro_data)
+
         direction_data = self.direction_engine.calculate_direction(
             market_analysis=market_analysis,
             liquidity_analysis=liquidity_analysis,
@@ -106,9 +115,11 @@ class IntelligenceOrchestrator:
         # Merge trend and volatility info into direction_data for report display
         direction_data["trend"] = market_analysis.get("trend", "NEUTRAL")
         direction_data["volatility"] = market_analysis.get("volatility", "NORMAL")
+        direction_data["cei_score"] = geopolitical_analysis.get("conflict_escalation_index", 25.0)
+        direction_data["safe_haven_premium_usd"] = geopolitical_analysis.get("safe_haven_premium_usd", 20.0)
+        direction_data["institutional_bias"] = institutional_analysis.get("institutional_bias", "BALANCED_POSITIONING")
 
         # 4. Save Market Snapshot & Liquidity Zones to Database
-        current_price = market_analysis.get("price", 0.0)
         if current_price > 0:
             await Repository.save_market_snapshot({
                 "symbol": "XAUUSD",
@@ -183,7 +194,7 @@ class IntelligenceOrchestrator:
             "provider_used": provider_used
         })
 
-        # 8. Evaluate and Trigger Alerts
+        # 8. Evaluate and Trigger Alerts & Session Open Briefings
         upcoming_events = await Repository.get_upcoming_economic_events(hours_ahead=24)
         await self.alert_engine.evaluate_and_dispatch_alerts(
             current_price=current_price,
@@ -194,7 +205,20 @@ class IntelligenceOrchestrator:
             synthesis_output=synthesis_output,
             provider_used=provider_used,
             upcoming_events=upcoming_events,
-            force_report=force_report
+            force_report=force_report,
+            geopolitical_data=geopolitical_analysis,
+            institutional_data=institutional_analysis
+        )
+
+        # Check for Session Open Bell Briefing (London or NY Open)
+        await self.alert_engine.check_and_dispatch_session_briefing(
+            current_price=current_price,
+            current_direction=direction_data,
+            liquidity_analysis=liquidity_analysis,
+            geopolitical_data=geopolitical_analysis,
+            upcoming_events=upcoming_events,
+            synthesis_output=synthesis_output,
+            market_data=market_data
         )
 
         elapsed = round((time.time() - cycle_start), 2)
@@ -212,6 +236,8 @@ class IntelligenceOrchestrator:
             "liquidity_analysis": liquidity_analysis,
             "macro_analysis": macro_analysis,
             "news_analysis": news_analysis,
+            "geopolitics": geopolitical_analysis,
+            "institutional_flow": institutional_analysis,
             "synthesis": synthesis_output.model_dump(),
             "cycle_duration_seconds": elapsed,
             "timestamp": datetime.now(timezone.utc).isoformat()

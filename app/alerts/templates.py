@@ -43,7 +43,10 @@ class AlertTemplates:
         upcoming_events: list,
         provider_used: str,
         final_market_verdict: str = "",
-        executive_verdict_summary: str = ""
+        executive_verdict_summary: str = "",
+        cei_score: float = 25.0,
+        safe_haven_premium: float = 20.0,
+        cot_bias: str = "BALANCED_POSITIONING"
     ) -> str:
         esc = TelegramBot.escape
         dir_emoji = "🟢" if "BULLISH" in direction else "🔴" if "BEARISH" in direction else "⚪"
@@ -92,12 +95,14 @@ class AlertTemplates:
 📝 <b>EXECUTIVE ANALYSIS:</b>
 {esc(summary_text)}
 ━━━━━━━━━━━━━━━━━━━━
-<b>📈 EVIDENCE MATRIX:</b>
+<b>📈 EVIDENCE MATRIX & GEOPOLITICS:</b>
 • Macro Score: <b>{macro_score:+.1f}</b>
 • USD Score: <b>{usd_score:+.1f}</b>
 • Yield Score: <b>{yield_score:+.1f}</b>
 • News Sentiment: <b>{news_score:+.1f}</b>
 • Technical Score: <b>{tech_score:+.1f}</b> ({esc(trend.replace('_', ' '))})
+• 🌍 Conflict Index (CEI): <b>{cei_score:.1f}/100</b> (+${safe_haven_premium:.2f}/oz Safe-Haven)
+• 🏛 Institutional COT: <b>{esc(cot_bias.replace('_', ' '))}</b>
 • Volatility: <b>{esc(volatility.replace('_', ' '))}</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>🔑 DOMINANT DRIVERS:</b>{drivers_str}
@@ -118,6 +123,53 @@ class AlertTemplates:
 ━━━━━━━━━━━━━━━━━━━━
 <i>ℹ️ Non-directional market intelligence. Not financial or trading advice.</i>"""
         return msg.strip()
+
+    @staticmethod
+    def session_open_briefing(
+        session_name: str,
+        price: float,
+        direction: str,
+        final_market_verdict: str,
+        cei_score: float,
+        safe_haven_premium: float,
+        overnight_high: float,
+        overnight_low: float,
+        nearest_ceiling: Optional[Dict[str, Any]],
+        nearest_floor: Optional[Dict[str, Any]],
+        events_today: List[Dict[str, Any]],
+        executive_summary: str
+    ) -> str:
+        esc = TelegramBot.escape
+        icon = "🇬🇧" if "LONDON" in session_name.upper() else "🇺🇸" if "NEW YORK" in session_name.upper() else "🔔"
+        
+        events_str = ""
+        for e in events_today[:3]:
+            events_str += f"\n  • <b>{esc(e.get('event_name', ''))}</b> ({esc(e.get('scheduled_time', ''))[:16]}) - [{esc(e.get('importance', 'HIGH'))}]"
+        if not events_str:
+            events_str = "\n  • No major tier-1 releases scheduled for this session"
+
+        ceil_str = f"${nearest_ceiling['price']:.2f} (+{nearest_ceiling.get('distance', 0):.1f} pips)" if nearest_ceiling else "None detected"
+        floor_str = f"${nearest_floor['price']:.2f} (-{nearest_floor.get('distance', 0):.1f} pips)" if nearest_floor else "None detected"
+
+        return f"""{icon} <b>PRE-MARKET {esc(session_name.upper())} OPEN BRIEFING</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Opening Spot Price:</b> ${price:.2f}
+🎯 <b>Market Verdict:</b> <b>{esc(final_market_verdict)} ({esc(direction)})</b>
+🌍 <b>Conflict Escalation (CEI):</b> <b>{cei_score:.1f}/100</b> (Safe-Haven Premium: +${safe_haven_premium:.2f}/oz)
+━━━━━━━━━━━━━━━━━━━━
+<b>📊 OVERNIGHT SESSION STRUCTURE:</b>
+• Range High: <b>${overnight_high:.2f}</b>
+• Range Low:  <b>${overnight_low:.2f}</b>
+• Nearest Resistance Magnet: <b>{ceil_str}</b>
+• Nearest Support Cushion:   <b>{floor_str}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>📝 SESSION EXECUTIVE OUTLOOK:</b>
+{esc(executive_summary)}
+━━━━━━━━━━━━━━━━━━━━
+<b>📅 UPCOMING HIGH-IMPACT CATALYSTS:</b>{events_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>🏛 Automated institutional bell intelligence. Non-advisory research.</i>""".strip()
 
     @staticmethod
     def direction_change_alert(
@@ -190,3 +242,4 @@ Current:  {dir_emoji} <b>{esc(new_direction)}</b> ({new_score:+.1f})
 📏 <b>Distance:</b> ${distance:.2f} ({abs(distance/current_price)*100:.2f}%)
 ━━━━━━━━━━━━━━━━━━━━
 <i>Price is approaching a high-significance structural liquidity cluster.</i>"""
+
