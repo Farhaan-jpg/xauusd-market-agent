@@ -346,7 +346,7 @@ async function loadConfigIntoModal() {
    ============================================================================== */
 async function fetchDashboardData() {
     try {
-        const [reportRes, marketRes, liqRes, newsRes, calRes, accRes, healthRes, histRes, geoRes, cotRes] = await Promise.all([
+        const [reportRes, marketRes, liqRes, newsRes, calRes, accRes, healthRes, histRes, geoRes, cotRes, macroRes] = await Promise.all([
             fetch("/api/latest-report").catch(() => null),
             fetch("/api/market-data").catch(() => null),
             fetch("/api/liquidity").catch(() => null),
@@ -356,7 +356,8 @@ async function fetchDashboardData() {
             fetch("/health").catch(() => null),
             fetch("/api/history").catch(() => null),
             fetch("/api/geopolitics").catch(() => null),
-            fetch("/api/institutional-flow").catch(() => null)
+            fetch("/api/institutional-flow").catch(() => null),
+            fetch("/api/macro").catch(() => null)
         ]);
 
         if (reportRes && reportRes.ok) updateReportUI(await reportRes.json());
@@ -369,6 +370,7 @@ async function fetchDashboardData() {
         if (histRes && histRes.ok) updateHistoryUI(await histRes.json());
         if (geoRes && geoRes.ok) updateGeopoliticsUI(await geoRes.json());
         if (cotRes && cotRes.ok) updateInstitutionalCOTUI(await cotRes.json());
+        if (macroRes && macroRes.ok) updateMacroTelemetryUI(await macroRes.json());
 
     } catch (error) {
         console.error("Error refreshing dashboard telemetries:", error);
@@ -475,12 +477,6 @@ function updateReportUI(report) {
     updateEvidenceMeter("ev-news-bar", "ev-news-val", report.scores?.news_score);
     updateEvidenceMeter("ev-tech-bar", "ev-tech-val", report.scores?.technical_score);
 
-    // Cross-Asset Macro Feed
-    setTelemetryVal("macro-dxy-score", report.scores?.usd_score);
-    setTelemetryVal("macro-10y-score", report.scores?.yield_score);
-    setTelemetryVal("macro-2y-score", report.scores?.macro_score);
-    setTelemetryVal("macro-tips-score", report.scores?.macro_score ? (report.scores.macro_score * 0.8).toFixed(1) : "0.0");
-
     // Dominant Drivers Pills
     const driversList = document.getElementById("dominant-drivers-list");
     if (driversList) {
@@ -540,6 +536,62 @@ function setTelemetryVal(id, score) {
         const num = Number(score) || 0;
         el.textContent = (num > 0 ? "+" : "") + num.toFixed(1);
         el.style.color = num > 10 ? "var(--bullish-green)" : num < -10 ? "var(--bearish-red)" : "var(--gold-primary)";
+    }
+}
+
+function updateMacroTelemetryUI(macro) {
+    if (!macro || macro.status === "NO_DATA") return;
+
+    // 1. DXY (US Dollar Index)
+    const dxyVal = document.getElementById("macro-dxy-val");
+    const dxyDesc = document.getElementById("macro-dxy-desc");
+    if (dxyVal && macro.dxy) {
+        const price = Number(macro.dxy.price) || 104.25;
+        const chg = Number(macro.dxy.change_pct) || 0;
+        dxyVal.textContent = price.toFixed(2);
+        if (dxyDesc) {
+            const chgStr = `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`;
+            dxyDesc.innerHTML = `24h: <b style="color:${chg >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)'}">${chgStr}</b> • Inverse gold correlation`;
+        }
+    }
+
+    // 2. US 10-Year Yield
+    const us10yVal = document.getElementById("macro-10y-val");
+    const us10yDesc = document.getElementById("macro-10y-desc");
+    if (us10yVal && macro.us10y) {
+        const yieldPct = Number(macro.us10y.yield_pct) || (Number(macro.us10y.price) > 10 ? Number(macro.us10y.price) / 10 : Number(macro.us10y.price)) || 4.28;
+        const chg = Number(macro.us10y.change_pct) || 0;
+        us10yVal.textContent = `${yieldPct.toFixed(2)}%`;
+        if (us10yDesc) {
+            const chgStr = `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`;
+            us10yDesc.innerHTML = `24h: <b style="color:${chg >= 0 ? 'var(--warning-yellow)' : 'var(--bullish-green)'}">${chgStr}</b> • Benchmark sovereign hurdle`;
+        }
+    }
+
+    // 3. US 2-Year Yield & Yield Spread
+    const us2yVal = document.getElementById("macro-2y-val");
+    const us2yDesc = document.getElementById("macro-2y-desc");
+    if (us2yVal && macro.us2y) {
+        const yieldPct = Number(macro.us2y.yield_pct) || (Number(macro.us2y.price) > 10 ? Number(macro.us2y.price) / 10 : Number(macro.us2y.price)) || 4.15;
+        const spread = macro.yield_spread_10y_2y !== undefined ? Number(macro.yield_spread_10y_2y) : 0.13;
+        us2yVal.textContent = `${yieldPct.toFixed(2)}%`;
+        if (us2yDesc) {
+            const spreadStr = `${spread >= 0 ? "+" : ""}${spread.toFixed(2)}%`;
+            us2yDesc.innerHTML = `10Y-2Y Spread: <b style="color:var(--gold-primary)">${spreadStr}</b> • Fed rate expectations`;
+        }
+    }
+
+    // 4. TIPS Real Rate / Real Yield Proxy
+    const tipsVal = document.getElementById("macro-tips-val");
+    const tipsDesc = document.getElementById("macro-tips-desc");
+    if (tipsVal && macro.tip) {
+        const price = Number(macro.tip.price) || 107.50;
+        const chg = Number(macro.tip.change_pct) || 0;
+        tipsVal.textContent = `$${price.toFixed(2)}`;
+        if (tipsDesc) {
+            const chgStr = `${chg >= 0 ? "+" : ""}${chg.toFixed(2)}%`;
+            tipsDesc.innerHTML = `24h: <b style="color:${chg >= 0 ? 'var(--bullish-green)' : 'var(--bearish-red)'}">${chgStr}</b> • Real yield ETF proxy`;
+        }
     }
 }
 

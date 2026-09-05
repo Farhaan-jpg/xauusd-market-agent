@@ -188,8 +188,16 @@ async def get_market_data() -> Dict[str, Any]:
         }
     }
 
+@app.get("/api/macro")
+async def get_macro_data() -> Dict[str, Any]:
+    """Returns live macroeconomic indicators: DXY, US 10Y Yield, US 2Y Yield, TIPS, and VIX."""
+    from app.data.macro.macro_provider import MacroDataProvider
+    provider = MacroDataProvider()
+    return await provider.fetch()
+
 @app.get("/api/liquidity")
 async def get_liquidity_zones() -> Dict[str, Any]:
+
     """Returns active liquidity zones above and below price."""
     zones = await Repository.get_active_liquidity_zones()
     snapshot = await Repository.get_latest_market_snapshot()
