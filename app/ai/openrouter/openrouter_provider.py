@@ -14,7 +14,19 @@ class OpenRouterProvider(BaseAIProvider):
     def __init__(self):
         super().__init__(name="OpenRouter")
         self.api_key = settings.OPENROUTER_API_KEY
-        self.models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
+        configured_models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
+        # Add reliable production slugs as automatic fallback
+        fallback_models = [
+            "deepseek/deepseek-r1",
+            "meta-llama/llama-3.3-70b-instruct",
+            "google/gemini-2.5-flash",
+            "mistralai/mistral-7b-instruct",
+            "anthropic/claude-3.5-sonnet"
+        ]
+        for fm in fallback_models:
+            if fm not in configured_models:
+                configured_models.append(fm)
+        self.models = configured_models
 
     async def synthesize(self, structured_input: Dict[str, Any]) -> AISynthesisOutput:
         if not self.api_key:
