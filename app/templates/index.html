@@ -379,52 +379,109 @@
             </section>
 
             <!-- ========================================================================= -->
-            <!-- TAB 2: LIQUIDITY RADAR -->
+            <!-- TAB 2: LIQUIDITY RADAR (VISUAL DEPTH CHART & ORDER FLOW LADDER) -->
             <!-- ========================================================================= -->
             <section class="tab-pane" id="tab-liquidity" role="tabpanel">
+                <!-- TOP LIQUIDITY METRICS RIBBON -->
+                <div class="liquidity-metrics-grid">
+                    <!-- 1. IMBALANCE RATIO -->
+                    <div class="content-card glass-panel liq-metric-box">
+                        <div class="liq-metric-header">
+                            <span class="liq-metric-title">POOL IMBALANCE RATIO</span>
+                            <span class="liq-bias-badge" id="liq-imbalance-badge">BALANCED</span>
+                        </div>
+                        <div class="imbalance-bar-container">
+                            <div class="imbalance-split-track">
+                                <div class="imbalance-fill-overhead" id="imbalance-bar-overhead" style="width: 50%;"></div>
+                                <div class="imbalance-fill-underlying" id="imbalance-bar-underlying" style="width: 50%;"></div>
+                            </div>
+                            <div class="imbalance-labels">
+                                <span class="imbalance-label-left">🔴 Overhead: <b id="overhead-pct-text">50%</b></span>
+                                <span class="imbalance-label-right">🟢 Underlying: <b id="underlying-pct-text">50%</b></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. NEAREST CEILING (RESISTANCE MAGNET) -->
+                    <div class="content-card glass-panel liq-metric-box">
+                        <div class="liq-metric-header">
+                            <span class="liq-metric-title">NEAREST OVERHEAD CEILING</span>
+                            <span class="liq-badge-red" id="ceiling-pips-badge">+0.0 pips</span>
+                        </div>
+                        <div class="liq-metric-body">
+                            <div class="liq-level-price mono-num" id="ceiling-price-val">$----.--</div>
+                            <div class="liq-level-sub" id="ceiling-desc-val">Scanning overhead resistance...</div>
+                        </div>
+                    </div>
+
+                    <!-- 3. NEAREST FLOOR (SUPPORT CUSHION) -->
+                    <div class="content-card glass-panel liq-metric-box">
+                        <div class="liq-metric-header">
+                            <span class="liq-metric-title">NEAREST UNDERLYING FLOOR</span>
+                            <span class="liq-badge-green" id="floor-pips-badge">-0.0 pips</span>
+                        </div>
+                        <div class="liq-metric-body">
+                            <div class="liq-level-price mono-num" id="floor-price-val">$----.--</div>
+                            <div class="liq-level-sub" id="floor-desc-val">Scanning underlying support...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN VISUAL LIQUIDITY DEPTH LADDER & CHART FIGURE -->
                 <div class="content-card glass-panel liquidity-ladder-card">
                     <div class="card-header">
                         <div class="header-text-group">
-                            <h2>🌊 Structural Liquidity Radar & Order Pools</h2>
-                            <p class="header-sub">High-probability order clusters, fair value gaps, and institutional liquidity pools</p>
+                            <h2>📊 Institutional Liquidity Depth Chart & Price Map</h2>
+                            <p class="header-sub">Visual order book depth, fair value gaps, and institutional liquidity clusters</p>
                         </div>
                         <div class="ladder-stats">
-                            <span class="stat-pill">Total Zones: <b id="radar-total-zones" class="mono-num">0</b></span>
+                            <span class="stat-pill">Total Pools: <b id="radar-total-zones" class="mono-num">0</b></span>
                             <span class="stat-pill">Tolerance: <b id="radar-tolerance-pips" class="mono-num">1.5 pips</b></span>
                         </div>
                     </div>
 
-                    <div class="liquidity-ladder-layout">
-                        <!-- OVERHEAD RESISTANCE & LIQUIDITY ABOVE -->
-                        <div class="ladder-section overhead-section">
-                            <div class="ladder-section-header">
-                                <span class="ladder-tag red">🔺 Overhead Resistance Pools (Liquidity Above)</span>
-                                <span class="ladder-count" id="count-above">0 Active</span>
-                            </div>
-                            <div class="ladder-zones-list" id="liquidity-above-list">
-                                <div class="zone-empty-state">Scanning overhead structure...</div>
-                            </div>
+                    <!-- VISUAL CHART FIGURE CONTAINER -->
+                    <div class="liquidity-chart-figure">
+                        <!-- CHART HEADER LEGEND -->
+                        <div class="chart-figure-legend">
+                            <div class="legend-item"><span class="legend-dot red"></span> Overhead Sell-Side Liquidity (Resistance / Supply)</div>
+                            <div class="legend-item"><span class="legend-dot gold"></span> Spot Equilibrium Anchor</div>
+                            <div class="legend-item"><span class="legend-dot green"></span> Underlying Buy-Side Liquidity (Support / Demand)</div>
                         </div>
 
-                        <!-- CURRENT SPOT PRICE BENCHMARK DIVIDER -->
-                        <div class="current-price-benchmark">
-                            <div class="benchmark-line"></div>
-                            <div class="benchmark-badge">
-                                <span class="pulse-beacon"></span>
-                                <span class="benchmark-label">CURRENT SPOT XAUUSD:</span>
-                                <span class="benchmark-price mono-num">$<span id="radar-gold-price">---.--</span></span>
+                        <!-- LADDER CHART BODY -->
+                        <div class="liquidity-ladder-layout">
+                            <!-- OVERHEAD RESISTANCE & LIQUIDITY ABOVE -->
+                            <div class="ladder-section overhead-section">
+                                <div class="ladder-section-header">
+                                    <span class="ladder-tag red">🔺 Overhead Resistance Pools (Supply & Liquidity Above)</span>
+                                    <span class="ladder-count" id="count-above">0 Active</span>
+                                </div>
+                                <div class="ladder-chart-bars" id="liquidity-above-list">
+                                    <div class="zone-empty-state">Scanning overhead structure...</div>
+                                </div>
                             </div>
-                            <div class="benchmark-line"></div>
-                        </div>
 
-                        <!-- UNDERLYING SUPPORT & LIQUIDITY BELOW -->
-                        <div class="ladder-section underlying-section">
-                            <div class="ladder-section-header">
-                                <span class="ladder-tag green">🔻 Underlying Support Pools (Liquidity Below)</span>
-                                <span class="ladder-count" id="count-below">0 Active</span>
+                            <!-- CURRENT SPOT PRICE BENCHMARK DIVIDER (CHART CROSSHAIR) -->
+                            <div class="current-price-benchmark" id="spot-price-crosshair">
+                                <div class="benchmark-line"></div>
+                                <div class="benchmark-badge">
+                                    <span class="pulse-beacon"></span>
+                                    <span class="benchmark-label">LIVE SPOT EQUILIBRIUM:</span>
+                                    <span class="benchmark-price mono-num">$<span id="radar-gold-price">---.--</span></span>
+                                </div>
+                                <div class="benchmark-line"></div>
                             </div>
-                            <div class="ladder-zones-list" id="liquidity-below-list">
-                                <div class="zone-empty-state">Scanning underlying structure...</div>
+
+                            <!-- UNDERLYING SUPPORT & LIQUIDITY BELOW -->
+                            <div class="ladder-section underlying-section">
+                                <div class="ladder-section-header">
+                                    <span class="ladder-tag green">🔻 Underlying Support Pools (Demand & Liquidity Below)</span>
+                                    <span class="ladder-count" id="count-below">0 Active</span>
+                                </div>
+                                <div class="ladder-chart-bars" id="liquidity-below-list">
+                                    <div class="zone-empty-state">Scanning underlying structure...</div>
+                                </div>
                             </div>
                         </div>
                     </div>

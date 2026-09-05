@@ -652,48 +652,143 @@ function updateLiquidityUI(liq) {
     const countAboveEl = document.getElementById("count-above");
     const countBelowEl = document.getElementById("count-below");
 
-    const total = liq.total_zones || (liq.liquidity_above?.length || 0) + (liq.liquidity_below?.length || 0);
+    const aboveZones = liq.liquidity_above || [];
+    const belowZones = liq.liquidity_below || [];
+    const total = liq.total_zones || (aboveZones.length + belowZones.length);
+
     if (totalCountEl) totalCountEl.textContent = total;
     if (zoneBadgeCount) zoneBadgeCount.textContent = total;
+    if (countAboveEl) countAboveEl.textContent = `${aboveZones.length} Active`;
+    if (countBelowEl) countBelowEl.textContent = `${belowZones.length} Active`;
 
-    if (countAboveEl) countAboveEl.textContent = `${liq.liquidity_above?.length || 0} Overhead`;
-    if (countBelowEl) countBelowEl.textContent = `${liq.liquidity_below?.length || 0} Underlying`;
+    // 1. Calculate Imbalance Ratio Metrics
+    const overheadWeight = aboveZones.reduce((acc, z) => acc + (Number(z.strength) || 75), 0);
+    const underlyingWeight = belowZones.reduce((acc, z) => acc + (Number(z.strength) || 75), 0);
+    const totalWeight = overheadWeight + underlyingWeight;
 
-    if (aboveList) {
-        if (!liq.liquidity_above || liq.liquidity_above.length === 0) {
-            aboveList.innerHTML = `<div class="zone-empty-state">No high-concentration resistance pools in current range.</div>`;
+    let overheadPct = 50;
+    let underlyingPct = 50;
+    if (totalWeight > 0) {
+        overheadPct = Math.round((overheadWeight / totalWeight) * 100);
+        underlyingPct = 100 - overheadPct;
+    }
+
+    const overheadBar = document.getElementById("imbalance-bar-overhead");
+    const underlyingBar = document.getElementById("imbalance-bar-underlying");
+    const overheadPctText = document.getElementById("overhead-pct-text");
+    const underlyingPctText = document.getElementById("underlying-pct-text");
+    const imbalanceBadge = document.getElementById("liq-imbalance-badge");
+
+    if (overheadBar) overheadBar.style.width = `${overheadPct}%`;
+    if (underlyingBar) underlyingBar.style.width = `${underlyingPct}%`;
+    if (overheadPctText) overheadPctText.textContent = `${overheadPct}%`;
+    if (underlyingPctText) underlyingPctText.textContent = `${underlyingPct}%`;
+
+    if (imbalanceBadge) {
+        if (overheadPct > 58) {
+            imbalanceBadge.textContent = "HEAVY OVERHEAD SUPPLY";
+            imbalanceBadge.style.color = "var(--bearish-red)";
+            imbalanceBadge.style.borderColor = "var(--bearish-border)";
+        } else if (underlyingPct > 58) {
+            imbalanceBadge.textContent = "STRONG BUY CUSHION";
+            imbalanceBadge.style.color = "var(--bullish-green)";
+            imbalanceBadge.style.borderColor = "var(--bullish-border)";
         } else {
-            aboveList.innerHTML = liq.liquidity_above.map(z => `
-                <div class="zone-item-modern overhead">
-                    <div class="zone-meta-left">
-                        <div class="zone-price-title mono-num">$${Number(z.price).toFixed(2)}</div>
-                        <div class="zone-tag-pill">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${z.timeframe || 'H4'}</div>
+            imbalanceBadge.textContent = "EQUILIBRIUM BALANCED";
+            imbalanceBadge.style.color = "var(--gold-primary)";
+            imbalanceBadge.style.borderColor = "rgba(245, 176, 65, 0.3)";
+        }
+    }
+
+    // 2. Nearest Ceiling (Overhead) and Floor (Underlying)
+    const ceilingPrice = document.getElementById("ceiling-price-val");
+    const ceilingPips = document.getElementById("ceiling-pips-badge");
+    const ceilingDesc = document.getElementById("ceiling-desc-val");
+
+    if (aboveZones.length > 0) {
+        // Sort closest to spot (lowest price above)
+        const sortedAbove = [...aboveZones].sort((a, b) => Number(a.price) - Number(b.price));
+        const nearestCeiling = sortedAbove[0];
+        if (ceilingPrice) ceilingPrice.textContent = `$${Number(nearestCeiling.price).toFixed(2)}`;
+        if (ceilingPips) ceilingPips.textContent = `+${Number(nearestCeiling.distance || 0).toFixed(1)} pips`;
+        if (ceilingDesc) ceilingDesc.textContent = `${nearestCeiling.type?.replace("_", " ") || "Resistance"} • ${Math.round(nearestCeiling.strength || 80)}% Str`;
+    } else {
+        if (ceilingPrice) ceilingPrice.textContent = "$----.--";
+        if (ceilingPips) ceilingPips.textContent = "+0.0 pips";
+        if (ceilingDesc) ceilingDesc.textContent = "No immediate overhead ceiling detected";
+    }
+
+    const floorPrice = document.getElementById("floor-price-val");
+    const floorPips = document.getElementById("floor-pips-badge");
+    const floorDesc = document.getElementById("floor-desc-val");
+
+    if (belowZones.length > 0) {
+        // Sort closest to spot (highest price below)
+        const sortedBelow = [...belowZones].sort((a, b) => Number(b.price) - Number(a.price));
+        const nearestFloor = sortedBelow[0];
+        if (floorPrice) floorPrice.textContent = `$${Number(nearestFloor.price).toFixed(2)}`;
+        if (floorPips) floorPips.textContent = `-${Number(nearestFloor.distance || 0).toFixed(1)} pips`;
+        if (floorDesc) floorDesc.textContent = `${nearestFloor.type?.replace("_", " ") || "Support"} • ${Math.round(nearestFloor.strength || 80)}% Str`;
+    } else {
+        if (floorPrice) floorPrice.textContent = "$----.--";
+        if (floorPips) floorPips.textContent = "-0.0 pips";
+        if (floorDesc) floorDesc.textContent = "No immediate underlying floor detected";
+    }
+
+    // 3. Render Visual Chart Depth Bars
+    if (aboveList) {
+        if (aboveZones.length === 0) {
+            aboveList.innerHTML = `<div class="zone-empty-state">No high-concentration resistance pools in immediate range.</div>`;
+        } else {
+            // Sort high to low price descending for ladder
+            const sortedAboveDesc = [...aboveZones].sort((a, b) => Number(b.price) - Number(a.price));
+            aboveList.innerHTML = sortedAboveDesc.map(z => {
+                const str = Math.min(100, Math.max(20, Math.round(z.strength || 80)));
+                return `
+                    <div class="zone-depth-row overhead">
+                        <div class="zone-axis-left">
+                            <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
+                            <div class="zone-type-badge">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${escapeHtml(z.timeframe || 'H4')}</div>
+                        </div>
+                        <div class="zone-depth-bar-wrapper" title="Liquidity Pool Strength: ${str}%">
+                            <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
+                            <span class="zone-depth-bar-text">Supply Pool Density: ${str}%</span>
+                        </div>
+                        <div class="zone-axis-right">
+                            <div class="zone-pip-dist mono-num">+${Number(z.distance || 0).toFixed(1)} pips</div>
+                            <span class="zone-strength-pill">${str}% Vol</span>
+                        </div>
                     </div>
-                    <div class="zone-meta-right">
-                        <div class="zone-strength-val mono-num">${Math.round(z.strength || 80)}% Str</div>
-                        <div class="zone-dist-val mono-num">+${Number(z.distance || 0).toFixed(1)} pips</div>
-                    </div>
-                </div>
-            `).join("");
+                `;
+            }).join("");
         }
     }
 
     if (belowList) {
-        if (!liq.liquidity_below || liq.liquidity_below.length === 0) {
-            belowList.innerHTML = `<div class="zone-empty-state">No high-concentration support pools in current range.</div>`;
+        if (belowZones.length === 0) {
+            belowList.innerHTML = `<div class="zone-empty-state">No high-concentration support pools in immediate range.</div>`;
         } else {
-            belowList.innerHTML = liq.liquidity_below.map(z => `
-                <div class="zone-item-modern underlying">
-                    <div class="zone-meta-left">
-                        <div class="zone-price-title mono-num">$${Number(z.price).toFixed(2)}</div>
-                        <div class="zone-tag-pill">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${z.timeframe || 'H4'}</div>
+            // Sort high to low price descending for ladder
+            const sortedBelowDesc = [...belowZones].sort((a, b) => Number(b.price) - Number(a.price));
+            belowList.innerHTML = sortedBelowDesc.map(z => {
+                const str = Math.min(100, Math.max(20, Math.round(z.strength || 80)));
+                return `
+                    <div class="zone-depth-row underlying">
+                        <div class="zone-axis-left">
+                            <div class="zone-price-tag mono-num">$${Number(z.price).toFixed(2)}</div>
+                            <div class="zone-type-badge">${escapeHtml(z.type || 'ORDER_CLUSTER')} • ${escapeHtml(z.timeframe || 'H4')}</div>
+                        </div>
+                        <div class="zone-depth-bar-wrapper" title="Liquidity Pool Strength: ${str}%">
+                            <div class="zone-depth-bar-fill" style="width: ${str}%;"></div>
+                            <span class="zone-depth-bar-text">Demand Pool Density: ${str}%</span>
+                        </div>
+                        <div class="zone-axis-right">
+                            <div class="zone-pip-dist mono-num">-${Number(z.distance || 0).toFixed(1)} pips</div>
+                            <span class="zone-strength-pill">${str}% Vol</span>
+                        </div>
                     </div>
-                    <div class="zone-meta-right">
-                        <div class="zone-strength-val mono-num">${Math.round(z.strength || 80)}% Str</div>
-                        <div class="zone-dist-val mono-num">-${Number(z.distance || 0).toFixed(1)} pips</div>
-                    </div>
-                </div>
-            `).join("");
+                `;
+            }).join("");
         }
     }
 }

@@ -1099,8 +1099,121 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==============================================================================
-   TAB 2: LIQUIDITY RADAR & ORDER FLOW LADDER
+   TAB 2: LIQUIDITY RADAR (VISUAL DEPTH CHART & PRICE MAP)
    ============================================================================== */
+.liquidity-metrics-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.liq-metric-box {
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.liq-metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.liq-metric-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.liq-bias-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(245, 176, 65, 0.15);
+    color: var(--gold-primary);
+    border: 1px solid rgba(245, 176, 65, 0.3);
+}
+
+.liq-badge-red {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--bearish-red);
+    background: var(--bearish-bg);
+    border: 1px solid var(--bearish-border);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.liq-badge-green {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--bullish-green);
+    background: var(--bullish-bg);
+    border: 1px solid var(--bullish-border);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.imbalance-bar-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.imbalance-split-track {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    display: flex;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+}
+
+.imbalance-fill-overhead {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.7), var(--bearish-red));
+    transition: width 0.5s ease;
+}
+
+.imbalance-fill-underlying {
+    height: 100%;
+    background: linear-gradient(90deg, var(--bullish-green), rgba(16, 185, 129, 0.7));
+    transition: width 0.5s ease;
+}
+
+.imbalance-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.imbalance-labels b {
+    color: var(--text-pure);
+}
+
+.liq-level-price {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-pure);
+    letter-spacing: -0.01em;
+}
+
+.liq-level-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Visual Liquidity Depth Chart */
 .liquidity-ladder-card {
     display: flex;
     flex-direction: column;
@@ -1127,10 +1240,50 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gold-primary);
 }
 
+.liquidity-chart-figure {
+    background: radial-gradient(circle at top center, rgba(30, 35, 45, 0.5) 0%, rgba(10, 12, 16, 0.8) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.chart-figure-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.red { background: var(--bearish-red); box-shadow: 0 0 6px var(--bearish-red); }
+.legend-dot.gold { background: var(--gold-primary); box-shadow: 0 0 6px var(--gold-primary); }
+.legend-dot.green { background: var(--bullish-green); box-shadow: 0 0 6px var(--bullish-green); }
+
 .liquidity-ladder-layout {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .ladder-section-header {
@@ -1141,7 +1294,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .ladder-tag {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.02em;
 }
@@ -1159,74 +1312,132 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-muted);
 }
 
-.ladder-zones-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 10px;
+.ladder-chart-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.zone-item-modern {
-    display: flex;
-    justify-content: space-between;
+/* Zone Depth Chart Item Row */
+.zone-depth-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 140px 1fr 120px;
     align-items: center;
-    padding: 12px 16px;
-    border-radius: var(--radius-md);
-    background: rgba(0, 0, 0, 0.35);
+    gap: 16px;
+    padding: 10px 14px;
+    background: rgba(15, 18, 24, 0.6);
     border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
     transition: all var(--transition-fast);
 }
 
-.zone-item-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+.zone-depth-row:hover {
+    transform: translateX(3px);
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(22, 26, 35, 0.85);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
-.zone-item-modern.overhead {
+.zone-depth-row.overhead {
     border-left: 4px solid var(--bearish-red);
 }
 
-.zone-item-modern.underlying {
+.zone-depth-row.underlying {
     border-left: 4px solid var(--bullish-green);
 }
 
-.zone-price-title {
+.zone-axis-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.zone-price-tag {
     font-size: 1.05rem;
     font-weight: 800;
     color: var(--text-pure);
 }
 
-.zone-tag-pill {
-    font-size: 0.7rem;
+.zone-type-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
     color: var(--text-muted);
-    margin-top: 2px;
 }
 
-.zone-meta-right {
-    text-align: right;
+.zone-depth-bar-wrapper {
+    position: relative;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
 }
 
-.zone-strength-val {
+.zone-depth-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.85;
+}
+
+.zone-depth-row.overhead .zone-depth-bar-fill {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.85) 100%);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.zone-depth-row.underlying .zone-depth-bar-fill {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.85) 100%);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.zone-depth-bar-text {
+    position: absolute;
+    left: 10px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-pure);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+.zone-axis-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.zone-pip-dist {
     font-size: 0.82rem;
     font-weight: 700;
-    color: var(--gold-primary);
 }
 
-.zone-dist-val {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
+.zone-depth-row.overhead .zone-pip-dist { color: var(--bearish-red); }
+.zone-depth-row.underlying .zone-pip-dist { color: var(--bullish-green); }
+
+.zone-strength-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--gold-primary);
+    background: rgba(245, 176, 65, 0.1);
+    padding: 1px 6px;
+    border-radius: 3px;
 }
 
 .zone-empty-state {
-    grid-column: 1 / -1;
     text-align: center;
-    padding: 24px;
+    padding: 20px;
     font-size: 0.85rem;
     color: var(--text-muted);
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: var(--radius-md);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
-/* Benchmark Divider */
+/* Spot Equilibrium Benchmark Crosshair */
 .current-price-benchmark {
     display: flex;
     align-items: center;
@@ -1236,7 +1447,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .benchmark-line {
     flex: 1;
-    height: 1px;
+    height: 2px;
     background: linear-gradient(90deg, transparent, var(--gold-primary), transparent);
 }
 
@@ -1244,11 +1455,11 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 18px;
+    padding: 8px 20px;
     border-radius: var(--radius-full);
     background: rgba(245, 176, 65, 0.15);
     border: 1px solid var(--gold-primary);
-    box-shadow: 0 0 20px var(--gold-glow);
+    box-shadow: 0 0 24px rgba(245, 176, 65, 0.3);
 }
 
 .pulse-beacon {
@@ -1268,7 +1479,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .benchmark-price {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: #fff;
 }
@@ -2001,6 +2212,9 @@ input:checked + .toggle-slider:before {
     .accuracy-metrics-ribbon {
         grid-template-columns: repeat(2, 1fr);
     }
+    .liquidity-metrics-grid {
+        grid-template-columns: 1fr;
+    }
     .market-sessions-bar {
         display: none;
     }
@@ -2064,6 +2278,25 @@ input:checked + .toggle-slider:before {
         display: none;
     }
 
+    .liquidity-metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .zone-depth-row {
+        grid-template-columns: 105px 1fr 85px;
+        gap: 8px;
+        padding: 8px 10px;
+    }
+
+    .zone-price-tag {
+        font-size: 0.92rem;
+    }
+
+    .zone-depth-bar-text {
+        display: none;
+    }
+
     .tech-grid, .macro-feed-grid, .accuracy-metrics-ribbon {
         grid-template-columns: 1fr;
     }
@@ -2087,3 +2320,4 @@ input:checked + .toggle-slider:before {
         grid-template-columns: 1fr;
     }
 }
+
