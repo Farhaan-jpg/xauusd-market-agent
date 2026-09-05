@@ -32,12 +32,12 @@ class MacroDataProvider(BaseDataProvider):
     def _fetch_sync(self) -> Dict[str, Any]:
         results = {}
 
-        # 1. DXY / US Dollar Index
-        dxy_data = self._get_ticker_snapshot(["DX-Y.NYB", "DX=F", "UUP", "USDX"], default_price=104.25, default_symbol="DX-Y.NYB")
+        # 1. DXY / US Dollar Index (DX-Y.NYB or UUP)
+        dxy_data = self._get_ticker_snapshot(["DX-Y.NYB", "UUP"], default_price=104.25, default_symbol="DX-Y.NYB")
         results["dxy"] = dxy_data
 
         # 2. US 10-Year Yield (^TNX is yield * 10, e.g. 42.80 = 4.28%)
-        us10y_data = self._get_ticker_snapshot(["^TNX", "US10Y", "IEF", "ZN=F"], default_price=42.80, default_symbol="^TNX")
+        us10y_data = self._get_ticker_snapshot(["^TNX", "IEF"], default_price=42.80, default_symbol="^TNX")
         if us10y_data and us10y_data.get("price") and us10y_data["price"] > 10.0 and ("^TNX" in us10y_data.get("symbol", "") or "TNX" in us10y_data.get("symbol", "")):
             us10y_data["yield_pct"] = round(us10y_data["price"] / 10.0, 3)
         elif us10y_data and us10y_data.get("price") and us10y_data["price"] <= 10.0:
@@ -47,7 +47,7 @@ class MacroDataProvider(BaseDataProvider):
         results["us10y"] = us10y_data
 
         # 3. US 2-Year Yield (^IRX 13-week bill / 2Y proxy, e.g. 41.50 = 4.15%)
-        us2y_data = self._get_ticker_snapshot(["^IRX", "US2Y", "SHY", "ZT=F"], default_price=41.50, default_symbol="^IRX")
+        us2y_data = self._get_ticker_snapshot(["^IRX", "SHY"], default_price=41.50, default_symbol="^IRX")
         if us2y_data and us2y_data.get("price") and us2y_data["price"] > 10.0 and ("^IRX" in us2y_data.get("symbol", "") or "IRX" in us2y_data.get("symbol", "")):
             us2y_data["yield_pct"] = round(us2y_data["price"] / 10.0, 3)
         elif us2y_data and us2y_data.get("price") and us2y_data["price"] <= 10.0:
@@ -77,7 +77,7 @@ class MacroDataProvider(BaseDataProvider):
         for sym in symbols:
             try:
                 ticker = yf.Ticker(sym)
-                hist = ticker.history(period="5d", interval="1d")
+                hist = ticker.history(period="5d", interval="1d", auto_adjust=True, raise_errors=False)
                 if not hist.empty and len(hist) >= 1:
                     curr = float(hist["close"].iloc[-1])
                     if curr > 0:
@@ -93,13 +93,14 @@ class MacroDataProvider(BaseDataProvider):
                 logger.debug(f"Could not fetch macro symbol {sym}: {e}")
                 continue
 
-        # If live ticker fetch failed on host (e.g. rate limit), use calibrated benchmark baseline with minimal random fluctuation
+        # If live ticker fetch failed on host, use calibrated benchmark baseline
         return {
             "symbol": default_symbol or symbols[0],
             "price": round(default_price, 4),
             "change_pct": 0.0,
             "available": True
         }
+
 
     def _get_fallback_macro_data(self) -> Dict[str, Any]:
         return {
