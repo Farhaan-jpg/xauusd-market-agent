@@ -256,6 +256,7 @@ function initSettingsModal() {
                 AI_PRIORITY: document.getElementById("cfg-ai-priority").value,
                 GEMINI_MODEL: document.getElementById("cfg-gemini-model").value,
                 GEMINI_API_KEY: document.getElementById("cfg-gemini-key").value,
+                OPENROUTER_MODEL: document.getElementById("cfg-openrouter-model") ? document.getElementById("cfg-openrouter-model").value : "openrouter/free",
                 OPENROUTER_API_KEY: document.getElementById("cfg-openrouter-key").value,
                 ANALYSIS_INTERVAL_SECONDS: parseInt(document.getElementById("cfg-interval").value, 10),
                 LIQUIDITY_TOLERANCE_PIPS: parseFloat(document.getElementById("cfg-liq-tol").value),
@@ -324,6 +325,7 @@ async function loadConfigIntoModal() {
 
             setVal("cfg-ai-priority", cfg.ai_priority || "gemini_first");
             if (cfg.gemini_model) setVal("cfg-gemini-model", cfg.gemini_model);
+            if (cfg.openrouter_model) setVal("cfg-openrouter-model", cfg.openrouter_model);
             setVal("cfg-gemini-key", cfg.gemini_key_masked || "");
             setVal("cfg-openrouter-key", cfg.openrouter_key_masked || "");
             setVal("cfg-interval", cfg.analysis_interval_seconds || 180);

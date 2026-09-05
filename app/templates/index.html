@@ -772,6 +772,17 @@
                         </div>
                     </div>
                     <div class="config-field">
+                        <label for="cfg-openrouter-model">OpenRouter Model Preference:</label>
+                        <select id="cfg-openrouter-model" class="modern-select">
+                            <option value="openrouter/free" selected>openrouter/free (Dynamic Free Auto-Router)</option>
+                            <option value="google/gemma-4-31b-it:free">Google Gemma 4 31B (Free)</option>
+                            <option value="nvidia/nemotron-3.5-lightning:free">NVIDIA Nemotron 3.5 (Free)</option>
+                            <option value="minimax/minimax-m3:free">MiniMax M3 (Free)</option>
+                            <option value="deepseek/deepseek-r1">DeepSeek R1 (Flagship Reasoning)</option>
+                            <option value="meta-llama/llama-3.3-70b-instruct">Meta LLaMA 3.3 70B</option>
+                        </select>
+                    </div>
+                    <div class="config-field">
                         <label for="cfg-openrouter-key">OpenRouter API Key (Optional):</label>
                         <div class="input-with-action">
                             <input type="password" id="cfg-openrouter-key" placeholder="sk-or-... (Leave blank for Safe Fallback)">

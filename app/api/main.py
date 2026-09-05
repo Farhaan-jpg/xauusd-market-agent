@@ -294,6 +294,7 @@ async def get_config() -> Dict[str, Any]:
         "gemini_model": settings.GEMINI_MODEL,
         "openrouter_configured": settings.has_openrouter,
         "openrouter_key_masked": mask_secret(settings.OPENROUTER_API_KEY),
+        "openrouter_model": settings.OPENROUTER_MODEL,
         "telegram_configured": settings.has_telegram,
         "telegram_token_masked": mask_secret(settings.TELEGRAM_BOT_TOKEN),
         "telegram_chat_id": settings.TELEGRAM_CHAT_ID or "",
@@ -312,7 +313,7 @@ async def update_config(payload: Dict[str, Any]) -> Dict[str, Any]:
         if k in ["GEMINI_API_KEY", "OPENROUTER_API_KEY", "TELEGRAM_BOT_TOKEN"]:
             if v and not v.endswith("...") and "..." not in v:
                 clean_updates[k] = v
-        elif k in ["TELEGRAM_CHAT_ID", "AI_PRIORITY", "TIMEZONE", "GEMINI_MODEL"]:
+        elif k in ["TELEGRAM_CHAT_ID", "AI_PRIORITY", "TIMEZONE", "GEMINI_MODEL", "OPENROUTER_MODEL"]:
             if v is not None:
                 clean_updates[k] = str(v).strip()
         elif k in ["ANALYSIS_INTERVAL_SECONDS", "DIRECTION_CHANGE_THRESHOLD_SCORE"]:
@@ -328,10 +329,11 @@ async def update_config(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     settings.update_runtime_config(clean_updates)
     
-    # Re-initialize providers with updated keys
+    # Re-initialize providers with updated keys & models
     orchestrator.synthesizer.gemini.api_key = settings.GEMINI_API_KEY
     orchestrator.synthesizer.gemini.model = settings.GEMINI_MODEL
     orchestrator.synthesizer.openrouter.api_key = settings.OPENROUTER_API_KEY
+    orchestrator.synthesizer.openrouter.models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
     orchestrator.alert_engine.bot.token = settings.TELEGRAM_BOT_TOKEN
     orchestrator.alert_engine.bot.chat_id = settings.TELEGRAM_CHAT_ID
     orchestrator.alert_engine.bot.enabled = settings.TELEGRAM_ALERTS_ENABLED and settings.has_telegram
