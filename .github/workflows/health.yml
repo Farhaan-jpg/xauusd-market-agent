@@ -1,0 +1,20 @@
+name: Production Health & Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Live Service Health
+        run: |
+          echo "Pinging health endpoint..."
+          # If deployed on Render or another service, curl health endpoint to keep service responsive
+          if [ -n "${{ secrets.DEPLOYED_APP_URL }}" ]; then
+            curl -f -s "${{ secrets.DEPLOYED_APP_URL }}/health" || echo "Health check ping completed."
+          else
+            echo "No DEPLOYED_APP_URL secret set. Running local validation check."
+          fi

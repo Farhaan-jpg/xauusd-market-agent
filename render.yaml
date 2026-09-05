@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: xauusd-ai-agent
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.0
+      - key: TIMEZONE
+        value: Asia/Kolkata
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TELEGRAM_ALERTS_ENABLED
+        value: "true"
+      - key: ANALYSIS_INTERVAL_SECONDS
+        value: "180"

@@ -1,0 +1,31 @@
+# Environment files containing secrets
+.env
+.env.local
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases & logs
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+logs/*.log
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
