@@ -22,9 +22,9 @@ class Settings(BaseSettings):
 
     # AI Configuration (Optional keys - fallback to deterministic if empty)
     GEMINI_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-1.5-flash-latest"
     OPENROUTER_API_KEY: Optional[str] = None
-    OPENROUTER_MODEL: str = "deepseek/deepseek-r1:free,meta-llama/llama-3.3-70b-instruct:free,google/gemini-2.0-flash-exp:free"
+    OPENROUTER_MODEL: str = "meta-llama/llama-3.1-8b-instruct:free,meta-llama/llama-3.2-3b-instruct:free,qwen/qwen-2.5-72b-instruct:free,deepseek/deepseek-r1"
     AI_PRIORITY: str = "gemini_first"  # 'gemini_first', 'openrouter_first', 'deterministic_only'
     AI_TIMEOUT_SECONDS: int = 25
     AI_MAX_RETRIES: int = 3

@@ -9,7 +9,7 @@ from app.core.logging import logger
 from app.storage.repository import Repository
 
 class AISynthesizer:
-    """Multi-tiered synthesis engine with automatic fallback routing."""
+    """Multi-tiered synthesis engine with automatic fallback routing across Gemini, OpenRouter, and Deterministic Engine."""
 
     def __init__(self):
         self.gemini = GeminiProvider()
@@ -43,28 +43,35 @@ class AISynthesizer:
             "upcoming_events": [e for e in economic_events[:3]]
         }
 
-        # 1. Check Gemini Primary
-        if settings.has_gemini and settings.AI_PRIORITY in ["gemini_first", "auto"]:
-            try:
-                output = await self.gemini.synthesize(payload)
-                await Repository.update_provider_health("Google_Gemini", is_healthy=True)
-                return output, "Google_Gemini"
-            except Exception as e:
-                logger.warning(f"Primary AI Gemini failed: {e}. Falling back to OpenRouter...")
-                await Repository.update_provider_health("Google_Gemini", is_healthy=False, error_message=str(e))
+        # Determine priority order
+        if settings.AI_PRIORITY == "openrouter_first":
+            tier_order = [
+                ("OpenRouter", self.openrouter, settings.has_openrouter),
+                ("Google_Gemini", self.gemini, settings.has_gemini)
+            ]
+        elif settings.AI_PRIORITY == "deterministic_only":
+            tier_order = []
+        else: # gemini_first (default)
+            tier_order = [
+                ("Google_Gemini", self.gemini, settings.has_gemini),
+                ("OpenRouter", self.openrouter, settings.has_openrouter)
+            ]
 
-        # 2. Check OpenRouter Secondary
-        if settings.has_openrouter:
-            try:
-                output = await self.openrouter.synthesize(payload)
-                await Repository.update_provider_health("OpenRouter", is_healthy=True)
-                return output, "OpenRouter"
-            except Exception as e:
-                logger.warning(f"Secondary AI OpenRouter failed: {e}. Falling back to Deterministic Mode...")
-                await Repository.update_provider_health("OpenRouter", is_healthy=False, error_message=str(e))
+        for provider_name, provider_instance, is_configured in tier_order:
+            if not is_configured:
+                continue
 
-        # 3. Safe Deterministic Fallback Mode
-        logger.info("Using Deterministic Fallback Engine for synthesis.")
+            try:
+                logger.info(f"Attempting AI synthesis via primary/secondary tier: {provider_name}...")
+                output = await provider_instance.synthesize(payload)
+                await Repository.update_provider_health(provider_name, is_healthy=True)
+                return output, provider_name
+            except Exception as e:
+                logger.warning(f"AI Tier '{provider_name}' failed completely ({e}). Cascading to next fallback tier...")
+                await Repository.update_provider_health(provider_name, is_healthy=False, error_message=str(e))
+
+        # Safe Deterministic Fallback Mode (Runs when all remote AI providers fail or are unconfigured/rate-limited)
+        logger.info("Engaging Safe Deterministic Fallback Engine for synthesis.")
         output = await self.fallback.synthesize(payload)
         await Repository.update_provider_health("Deterministic_Fallback", is_healthy=True)
         return output, "Deterministic_Fallback"

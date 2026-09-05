@@ -9,19 +9,25 @@ from app.config.settings import settings
 from app.core.logging import logger
 
 class OpenRouterProvider(BaseAIProvider):
-    """OpenRouter integration with multi-model fallback."""
+    """OpenRouter integration with multi-model fallback across active free and low-cost models."""
 
     def __init__(self):
         super().__init__(name="OpenRouter")
         self.api_key = settings.OPENROUTER_API_KEY
         configured_models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
-        # Add reliable production slugs as automatic fallback
+        
+        # Free and resilient production model fallbacks
         fallback_models = [
-            "deepseek/deepseek-r1",
+            "meta-llama/llama-3.1-8b-instruct:free",
+            "meta-llama/llama-3.2-3b-instruct:free",
+            "meta-llama/llama-3.2-1b-instruct:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "qwen/qwen-2.5-coder-32b-instruct:free",
+            "mistralai/mistral-small-24b-instruct-2501:free",
+            "google/gemini-2.0-flash-thinking-exp:free",
+            "cognitivecomputations/dolphin3.0-r1-mistral-24b:free",
             "meta-llama/llama-3.3-70b-instruct",
-            "google/gemini-2.5-flash",
-            "mistralai/mistral-7b-instruct",
-            "anthropic/claude-3.5-sonnet"
+            "deepseek/deepseek-r1"
         ]
         for fm in fallback_models:
             if fm not in configured_models:
@@ -37,7 +43,7 @@ class OpenRouterProvider(BaseAIProvider):
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "HTTP-Referer": "https://github.com/xauusd-market-agent",
+            "HTTP-Referer": "https://github.com/Farhaan-jpg/xauusd-market-agent",
             "X-Title": "XAUUSD Market Intelligence Agent",
             "Content-Type": "application/json"
         }
@@ -51,11 +57,13 @@ class OpenRouterProvider(BaseAIProvider):
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.2,
+                "max_tokens": 1000,
                 "response_format": {"type": "json_object"}
             }
 
             try:
-                async with httpx.AsyncClient(timeout=settings.AI_TIMEOUT_SECONDS) as client:
+                logger.info(f"Trying OpenRouter model '{model}'...")
+                async with httpx.AsyncClient(timeout=min(settings.AI_TIMEOUT_SECONDS, 15)) as client:
                     response = await client.post(url, headers=headers, json=payload)
 
                 if response.status_code == 200:
@@ -65,11 +73,16 @@ class OpenRouterProvider(BaseAIProvider):
                         raw_content = choices[0]["message"]["content"]
                         clean_str = self._clean_json(raw_content)
                         parsed = json.loads(clean_str)
+                        logger.info(f"OpenRouter synthesis successfully generated via model '{model}'.")
                         return AISynthesisOutput(**parsed)
+                elif response.status_code == 404:
+                    logger.warning(f"OpenRouter model '{model}' not found / unavailable (404). Trying next model...")
+                elif response.status_code == 402:
+                    logger.warning(f"OpenRouter model '{model}' requires more credits (402). Trying next model...")
                 else:
-                    logger.warning(f"OpenRouter model {model} failed ({response.status_code}): {response.text}")
+                    logger.warning(f"OpenRouter model '{model}' failed ({response.status_code}): {response.text[:200]}")
             except Exception as e:
-                logger.warning(f"OpenRouter model {model} error: {e}")
+                logger.warning(f"OpenRouter model '{model}' exception: {e}")
                 last_error = e
 
         raise last_error or Exception("All OpenRouter models failed.")

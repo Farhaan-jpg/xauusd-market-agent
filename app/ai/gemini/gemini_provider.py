@@ -16,21 +16,25 @@ class GeminiProvider(BaseAIProvider):
     def __init__(self):
         super().__init__(name="Google_Gemini")
         self.api_key = settings.GEMINI_API_KEY
-        self.model = settings.GEMINI_MODEL or "gemini-2.5-flash"
+        self.model = settings.GEMINI_MODEL or "gemini-1.5-flash-latest"
 
     async def synthesize(self, structured_input: Dict[str, Any]) -> AISynthesisOutput:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not configured.")
 
-        # Candidate models with primary model first, followed by resilient high-quota fallbacks
+        # Candidate models with primary model first, followed by resilient official endpoints
         candidate_models = [self.model]
         fallback_pool = [
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
+            "gemini-1.5-flash-latest",
             "gemini-1.5-flash",
-            "gemini-3.7-flash",
-            "gemini-3.5-flash",
-            "gemini-2.5-pro"
+            "gemini-1.5-flash-002",
+            "gemini-1.5-flash-001",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-exp",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro-latest",
+            "gemini-1.5-pro",
+            "gemini-3.7-flash"
         ]
         for fallback_m in fallback_pool:
             if fallback_m not in candidate_models:
