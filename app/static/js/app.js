@@ -226,8 +226,10 @@ function updateMarketData(data) {
     if (!data || data.status === "NO_DATA") return;
 
     const priceEl = document.getElementById("live-gold-price");
-    if (priceEl && data.price) {
-        priceEl.textContent = Number(data.price).toFixed(2);
+    if (priceEl && data.price !== undefined) {
+        const p = Number(data.price);
+        const decStr = p.toString().split('.')[1] || "";
+        priceEl.textContent = decStr.length > 2 ? p.toFixed(3) : p.toFixed(2);
     }
 
     const changeEl = document.getElementById("live-price-change");
@@ -243,8 +245,14 @@ function updateMarketData(data) {
     const highEl = document.getElementById("mini-high");
     const fillEl = document.getElementById("mini-range-fill");
 
-    if (lowEl && data.low_24h) lowEl.textContent = Math.round(data.low_24h);
-    if (highEl && data.high_24h) highEl.textContent = Math.round(data.high_24h);
+    if (lowEl && data.low_24h !== undefined) {
+        const l = Number(data.low_24h);
+        lowEl.textContent = l >= 1000 ? l.toFixed(1) : l.toFixed(2);
+    }
+    if (highEl && data.high_24h !== undefined) {
+        const h = Number(data.high_24h);
+        highEl.textContent = h >= 1000 ? h.toFixed(1) : h.toFixed(2);
+    }
 
     if (fillEl && data.price && data.low_24h && data.high_24h && data.high_24h > data.low_24h) {
         const pct = ((data.price - data.low_24h) / (data.high_24h - data.low_24h)) * 100;
@@ -482,11 +490,15 @@ function updateInstitutionalFlow(data) {
 function updateLiquidityData(data) {
     if (!data) return;
 
-    const curPrice = data.current_price || 4476.60;
+    const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
+    const curPrice = data.current_price || liveDomPrice || 4430.00;
     
     // Spot Price Anchor in Ladder
     const spotEl = document.getElementById("ladder-spot-price");
-    if (spotEl) spotEl.textContent = `$${Number(curPrice).toFixed(2)}`;
+    if (spotEl) {
+        const decStr = curPrice.toString().split('.')[1] || "";
+        spotEl.textContent = `$${decStr.length > 2 ? curPrice.toFixed(3) : curPrice.toFixed(2)}`;
+    }
 
     // Orderflow Bias Pill
     const biasPill = document.getElementById("liq-orderflow-bias");

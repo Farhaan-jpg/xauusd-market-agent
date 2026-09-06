@@ -244,7 +244,12 @@ async def get_liquidity_zones() -> Dict[str, Any]:
     """Returns active liquidity zones above and below price."""
     zones = await Repository.get_active_liquidity_zones()
     snapshot = await Repository.get_latest_market_snapshot()
-    price = snapshot.price if snapshot and snapshot.price > 0 else 4476.60
+    if snapshot and snapshot.price > 0:
+        price = snapshot.price
+    else:
+        from app.data.market.market_provider import MarketDataProvider
+        m_data = await MarketDataProvider().fetch()
+        price = m_data.get("price", 4430.00)
 
     above = [z for z in zones if z.is_above]
     below = [z for z in zones if not z.is_above]
