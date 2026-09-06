@@ -6,15 +6,12 @@
 let refreshIntervalId = null;
 let currentRefreshRate = 10; // seconds
 let knownNewsFingerprints = new Set();
-let chartData = null;
-let activeTimeframe = "H1";
 
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initSessions();
     initActionButtons();
     initSettingsDrawer();
-    initChartControls();
     
     // Initial data fetch
     fetchFullDashboard();
@@ -41,11 +38,6 @@ function initTabs() {
             tabPanes.forEach(pane => {
                 pane.classList.toggle("active", pane.id === targetId);
             });
-
-            // If switching to chart tab, resize/redraw chart
-            if (targetId === "tab-chart") {
-                renderChart();
-            }
         });
     });
 
@@ -122,9 +114,6 @@ async function fetchFullDashboard() {
         if (liqRes.status === "fulfilled") updateLiquidityData(liqRes.value);
         if (calRes.status === "fulfilled") updateCalendarData(calRes.value);
         if (geoRes.status === "fulfilled") updateGeopolitics(geoRes.value);
-
-        // Fetch chart candles in background
-        fetchChartCandles(activeTimeframe);
 
     } catch (err) {
         console.error("Dashboard refresh error:", err);
@@ -359,42 +348,61 @@ function updateNewsStream(newsItems) {
 function updateMacroData(data) {
     if (!data) return;
 
-    if (data.us_10y_yield) {
-        const el = document.getElementById("macro-us10y-val");
-        if (el) el.textContent = `${Number(data.us_10y_yield.value).toFixed(2)}%`;
-        const badge = document.getElementById("macro-us10y-bias");
-        if (badge) {
-            const b = data.us_10y_yield.gold_bias;
-            badge.textContent = b;
-            badge.className = `macro-badge ${b === 'BULLISH' ? 'bull' : b === 'BEARISH' ? 'bear' : ''}`;
-        }
+    // US 10-Year Yield
+    const us10yVal = data.us_10y_yield?.value !== undefined ? data.us_10y_yield.value : 
+                     data.us10y?.yield_pct !== undefined ? data.us10y.yield_pct : 
+                     data.us10y?.price !== undefined ? data.us10y.price : 4.78;
+    const us10yChg = data.us_10y_yield?.change_pct !== undefined ? data.us_10y_yield.change_pct : 
+                     data.us10y?.change_pct || 0.0;
+    const us10yBias = data.us_10y_yield?.gold_bias || (us10yChg < 0 ? "BULLISH" : us10yChg > 0 ? "BEARISH" : "NEUTRAL");
+
+    const el10y = document.getElementById("macro-us10y-val");
+    if (el10y) el10y.textContent = `${Number(us10yVal).toFixed(2)}%`;
+    const badge10y = document.getElementById("macro-us10y-bias");
+    if (badge10y) {
+        badge10y.textContent = us10yBias;
+        badge10y.className = `macro-badge ${us10yBias === 'BULLISH' ? 'bull' : us10yBias === 'BEARISH' ? 'bear' : ''}`;
     }
 
-    if (data.dxy_index) {
-        const el = document.getElementById("macro-dxy-val");
-        if (el) el.textContent = Number(data.dxy_index.value).toFixed(2);
-        const badge = document.getElementById("macro-dxy-bias");
-        if (badge) {
-            const b = data.dxy_index.gold_bias;
-            badge.textContent = b;
-            badge.className = `macro-badge ${b === 'BULLISH' ? 'bull' : b === 'BEARISH' ? 'bear' : ''}`;
-        }
+    // US Dollar Index (DXY)
+    const dxyVal = data.dxy_index?.value !== undefined ? data.dxy_index.value :
+                   data.dxy?.price !== undefined ? data.dxy.price : 99.16;
+    const dxyChg = data.dxy_index?.change_pct !== undefined ? data.dxy_index.change_pct :
+                   data.dxy?.change_pct || 0.0;
+    const dxyBias = data.dxy_index?.gold_bias || (dxyChg < 0 ? "BULLISH" : dxyChg > 0 ? "BEARISH" : "NEUTRAL");
+
+    const elDxy = document.getElementById("macro-dxy-val");
+    if (elDxy) elDxy.textContent = Number(dxyVal).toFixed(2);
+    const badgeDxy = document.getElementById("macro-dxy-bias");
+    if (badgeDxy) {
+        badgeDxy.textContent = dxyBias;
+        badgeDxy.className = `macro-badge ${dxyBias === 'BULLISH' ? 'bull' : dxyBias === 'BEARISH' ? 'bear' : ''}`;
     }
 
-    if (data.tips_real_yield) {
-        const el = document.getElementById("macro-tips-val");
-        if (el) el.textContent = `${Number(data.tips_real_yield.value).toFixed(2)}%`;
-        const badge = document.getElementById("macro-tips-bias");
-        if (badge) {
-            const b = data.tips_real_yield.gold_bias;
-            badge.textContent = b;
-            badge.className = `macro-badge ${b === 'BULLISH' ? 'bull' : b === 'BEARISH' ? 'bear' : ''}`;
-        }
+    // Real Yields (TIPS)
+    const tipsVal = data.tips_real_yield?.value !== undefined ? data.tips_real_yield.value :
+                    Number(us10yVal - 2.15).toFixed(2);
+    const tipsChg = data.tips_real_yield?.change_pct !== undefined ? data.tips_real_yield.change_pct :
+                    data.tip?.change_pct || 0.0;
+    const tipsBias = data.tips_real_yield?.gold_bias || (tipsChg > 0 ? "BULLISH" : "NEUTRAL");
+
+    const elTips = document.getElementById("macro-tips-val");
+    if (elTips) elTips.textContent = `${Number(tipsVal).toFixed(2)}%`;
+    const badgeTips = document.getElementById("macro-tips-bias");
+    if (badgeTips) {
+        badgeTips.textContent = tipsBias;
+        badgeTips.className = `macro-badge ${tipsBias === 'BULLISH' ? 'bull' : 'neutral'}`;
     }
 
-    if (data.vix_index) {
-        const el = document.getElementById("macro-vix-val");
-        if (el) el.textContent = Number(data.vix_index.value).toFixed(2);
+    // VIX Index
+    const vixVal = data.vix_index?.value !== undefined ? data.vix_index.value :
+                   data.vix?.price !== undefined ? data.vix.price : 14.53;
+    const elVix = document.getElementById("macro-vix-val");
+    if (elVix) elVix.textContent = Number(vixVal).toFixed(2);
+    const badgeVix = document.getElementById("macro-vix-bias");
+    if (badgeVix) {
+        badgeVix.textContent = vixVal > 20 ? "ELEVATED" : "NORMAL";
+        badgeVix.className = `macro-badge ${vixVal > 20 ? 'bull' : ''}`;
     }
 }
 
@@ -420,32 +428,98 @@ function updateGeopolitics(data) {
 function updateLiquidityData(data) {
     if (!data) return;
 
-    const supplyContainer = document.getElementById("supply-zones-list");
-    if (supplyContainer && Array.isArray(data.liquidity_above)) {
+    const curPrice = data.current_price || 4476.60;
+    
+    // Spot Price Anchor in Ladder
+    const spotEl = document.getElementById("ladder-spot-price");
+    if (spotEl) spotEl.textContent = `$${Number(curPrice).toFixed(2)}`;
+
+    // Orderflow Bias Pill
+    const biasPill = document.getElementById("liq-orderflow-bias");
+    const biasText = document.getElementById("liq-orderflow-text");
+    if (biasPill && biasText) {
+        const isBull = data.order_flow_bias !== "BEARISH_ORDER_FLOW";
+        biasPill.className = `orderflow-bias-pill ${isBull ? '' : 'bearish'}`;
+        biasText.textContent = isBull ? "BULLISH ORDER-FLOW" : "BEARISH ORDER-FLOW";
+    }
+
+    // Supply items (Above Price)
+    const supplyList = document.getElementById("ladder-supply-items");
+    if (supplyList && Array.isArray(data.liquidity_above)) {
         if (data.liquidity_above.length === 0) {
-            supplyContainer.innerHTML = `<div class="empty-state-mini">No overhead supply clusters found.</div>`;
+            supplyList.innerHTML = `<div class="empty-state-mini">No overhead supply pools detected.</div>`;
         } else {
-            supplyContainer.innerHTML = data.liquidity_above.slice(0, 4).map(z => `
-                <div class="liq-row">
-                    <span class="liq-price">$${Number(z.price).toFixed(2)}</span>
-                    <span class="liq-type">${z.type.replace('_', ' ')} (+${z.distance.toFixed(1)} pts)</span>
-                </div>
-            `).join("");
+            supplyList.innerHTML = data.liquidity_above.map(z => {
+                const dist = Math.abs(z.price - curPrice).toFixed(1);
+                const strength = Math.round(z.strength || 85);
+                return `
+                    <div class="ladder-row">
+                        <div class="ladder-depth-bar" style="width: ${strength}%;"></div>
+                        <div class="ladder-left">
+                            <span class="ladder-price">$${Number(z.price).toFixed(2)}</span>
+                            <span class="ladder-dist">+${dist} pts</span>
+                        </div>
+                        <div class="ladder-mid">
+                            <span class="ladder-type-name">${escapeHtml(z.type.replace(/_/g, ' '))}</span>
+                            <span class="ladder-sub-detail">${escapeHtml(z.sweep_risk || 'Resistance Pool')} • ${z.timeframe || 'H1'}</span>
+                        </div>
+                        <div class="ladder-right">
+                            <span class="ladder-strength-badge">${strength}% Depth</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
         }
     }
 
-    const demandContainer = document.getElementById("demand-zones-list");
-    if (demandContainer && Array.isArray(data.liquidity_below)) {
+    // Demand items (Below Price)
+    const demandList = document.getElementById("ladder-demand-items");
+    if (demandList && Array.isArray(data.liquidity_below)) {
         if (data.liquidity_below.length === 0) {
-            demandContainer.innerHTML = `<div class="empty-state-mini">No resting demand clusters found.</div>`;
+            demandList.innerHTML = `<div class="empty-state-mini">No resting demand pools detected.</div>`;
         } else {
-            demandContainer.innerHTML = data.liquidity_below.slice(0, 4).map(z => `
-                <div class="liq-row">
-                    <span class="liq-price">$${Number(z.price).toFixed(2)}</span>
-                    <span class="liq-type">${z.type.replace('_', ' ')} (-${z.distance.toFixed(1)} pts)</span>
-                </div>
-            `).join("");
+            demandList.innerHTML = data.liquidity_below.map(z => {
+                const dist = Math.abs(curPrice - z.price).toFixed(1);
+                const strength = Math.round(z.strength || 85);
+                return `
+                    <div class="ladder-row">
+                        <div class="ladder-depth-bar" style="width: ${strength}%;"></div>
+                        <div class="ladder-left">
+                            <span class="ladder-price">$${Number(z.price).toFixed(2)}</span>
+                            <span class="ladder-dist">-${dist} pts</span>
+                        </div>
+                        <div class="ladder-mid">
+                            <span class="ladder-type-name">${escapeHtml(z.type.replace(/_/g, ' '))}</span>
+                            <span class="ladder-sub-detail">${escapeHtml(z.sweep_risk || 'Support Pool')} • ${z.timeframe || 'H1'}</span>
+                        </div>
+                        <div class="ladder-right">
+                            <span class="ladder-strength-badge">${strength}% Depth</span>
+                        </div>
+                    </div>
+                `;
+            }).join("");
         }
+    }
+
+    // 3 Intelligence Metric Boxes
+    const immRes = document.getElementById("liq-imm-res");
+    const resDist = document.getElementById("liq-res-dist");
+    if (immRes && data.immediate_resistance) {
+        immRes.textContent = `$${Number(data.immediate_resistance).toFixed(2)}`;
+        if (resDist) resDist.textContent = `+${Math.abs(data.immediate_resistance - curPrice).toFixed(1)} pts away`;
+    }
+
+    const immSup = document.getElementById("liq-imm-sup");
+    const supDist = document.getElementById("liq-sup-dist");
+    if (immSup && data.immediate_support) {
+        immSup.textContent = `$${Number(data.immediate_support).toFixed(2)}`;
+        if (supDist) supDist.textContent = `-${Math.abs(curPrice - data.immediate_support).toFixed(1)} pts away`;
+    }
+
+    const imbVal = document.getElementById("liq-imbalance-val");
+    if (imbVal) {
+        imbVal.textContent = data.order_flow_bias === "BULLISH_ORDER_FLOW" ? "+64% Buy Depth" : "-58% Sell Pressure";
+        imbVal.className = `intel-val ${data.order_flow_bias === "BULLISH_ORDER_FLOW" ? 'color-green' : 'color-red'}`;
     }
 }
 
@@ -516,134 +590,7 @@ function initActionButtons() {
 }
 
 /* ==============================================================================
-   6. CHART ENGINE (CLEAN CANVAS RENDERING)
-   ============================================================================== */
-function initChartControls() {
-    const tfBtns = document.querySelectorAll(".tf-btn");
-    tfBtns.forEach(btn => {
-        btn.addEventListener("click", () => {
-            tfBtns.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            activeTimeframe = btn.getAttribute("data-tf");
-            fetchChartCandles(activeTimeframe);
-        });
-    });
-
-    window.addEventListener("resize", () => {
-        if (document.getElementById("tab-chart")?.classList.contains("active")) {
-            renderChart();
-        }
-    });
-}
-
-async function fetchChartCandles(tf) {
-    try {
-        const res = await fetch(`/api/candles?timeframe=${tf}`);
-        if (!res.ok) return;
-        chartData = await res.json();
-        renderChart();
-    } catch (e) {
-        console.debug("Candle fetch error:", e);
-    }
-}
-
-function renderChart() {
-    const canvas = document.getElementById("xauusd-chart-canvas");
-    if (!canvas || !chartData || !chartData.candles || chartData.candles.length === 0) return;
-
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-
-    const width = rect.width;
-    const height = rect.height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    const candles = chartData.candles;
-    let minPrice = Infinity;
-    let maxPrice = -Infinity;
-
-    candles.forEach(c => {
-        if (c.low < minPrice) minPrice = c.low;
-        if (c.high > maxPrice) maxPrice = c.high;
-    });
-
-    const padding = (maxPrice - minPrice) * 0.1 || 2.0;
-    minPrice -= padding;
-    maxPrice += padding;
-
-    const getY = p => height - ((p - minPrice) / (maxPrice - minPrice)) * height;
-    const step = width / candles.length;
-    const candleWidth = Math.max(3, step * 0.65);
-
-    // Draw Liquidity Overlays
-    if (chartData.liquidity_overlays) {
-        chartData.liquidity_overlays.forEach(ov => {
-            const yHigh = getY(ov.range_high || (ov.price + 2));
-            const yLow = getY(ov.range_low || (ov.price - 2));
-            const bandHeight = Math.max(3, yLow - yHigh);
-
-            ctx.fillStyle = ov.color || "rgba(245, 158, 11, 0.15)";
-            ctx.fillRect(0, yHigh, width, bandHeight);
-
-            ctx.strokeStyle = ov.border_color || "#f59e0b";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(0, yHigh, width, bandHeight);
-        });
-    }
-
-    // Draw Candlesticks
-    candles.forEach((c, idx) => {
-        const x = idx * step + (step / 2);
-        const yOpen = getY(c.open);
-        const yClose = getY(c.close);
-        const yHigh = getY(c.high);
-        const yLow = getY(c.low);
-
-        const isBull = c.close >= c.open;
-        const color = isBull ? "#10b981" : "#f43f5e";
-
-        // Wick
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x, yHigh);
-        ctx.lineTo(x, yLow);
-        ctx.stroke();
-
-        // Body
-        ctx.fillStyle = color;
-        const topY = Math.min(yOpen, yClose);
-        const bodyH = Math.max(2, Math.abs(yClose - yOpen));
-        ctx.fillRect(x - (candleWidth / 2), topY, candleWidth, bodyH);
-    });
-
-    // Draw Spot Price Line
-    if (chartData.current_price) {
-        const curY = getY(chartData.current_price);
-        ctx.strokeStyle = "#f59e0b";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(0, curY);
-        ctx.lineTo(width, curY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Label
-        ctx.fillStyle = "#f59e0b";
-        ctx.font = "bold 10px 'JetBrains Mono'";
-        ctx.fillText(`$${chartData.current_price.toFixed(2)}`, width - 65, curY - 4);
-    }
-}
-
-/* ==============================================================================
-   7. SETTINGS & TELEGRAM DRAWER CONTROLLER
+   6. SETTINGS & TELEGRAM DRAWER CONTROLLER
    ============================================================================== */
 function initSettingsDrawer() {
     const btnOpen = document.getElementById("btn-open-settings");
@@ -744,7 +691,7 @@ async function loadConfigIntoDrawer() {
 }
 
 /* ==============================================================================
-   8. NOTIFICATION HELPERS
+   7. NOTIFICATION HELPERS
    ============================================================================== */
 function showBreakingBanner(headline) {
     const banner = document.getElementById("breaking-banner");

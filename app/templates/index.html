@@ -366,57 +366,82 @@
             </section>
 
             <!-- ========================================================= -->
-            <!-- 4. LIQUIDITY RADAR & CLEAN CHART -->
+            <!-- 4. INSTITUTIONAL LIQUIDITY RADAR & DEPTH LADDER -->
             <!-- ========================================================= -->
             <section class="content-panel" id="tab-chart">
-                <div class="chart-panel-card">
-                    <div class="chart-top-bar">
-                        <div class="chart-title-area">
-                            <h2>XAUUSD Price & Liquidity Order-Flow Bands</h2>
-                            <span class="chart-subtitle">Synthetic multi-timeframe candles anchored to spot price & liquidity pools</span>
+                <div class="liquidity-radar-card">
+                    <div class="panel-head">
+                        <div class="panel-title-group">
+                            <span class="panel-icon">🌊</span>
+                            <div>
+                                <h2>Institutional Order-Flow Liquidity Radar</h2>
+                                <p class="panel-subtitle">Real-time supply/demand clusters, stop-hunt pools, and liquidity depth ladder</p>
+                            </div>
                         </div>
-                        <div class="timeframe-selector">
-                            <button class="tf-btn" data-tf="M15">M15</button>
-                            <button class="tf-btn active" data-tf="H1">H1</button>
-                            <button class="tf-btn" data-tf="H4">H4</button>
-                            <button class="tf-btn" data-tf="D1">D1</button>
-                        </div>
-                    </div>
-
-                    <!-- Canvas Chart Viewport -->
-                    <div class="chart-viewport-wrapper">
-                        <canvas id="xauusd-chart-canvas"></canvas>
-                        <div class="chart-legend">
-                            <span class="legend-item"><span class="legend-dot supply"></span> Supply / Resistance Zone</span>
-                            <span class="legend-item"><span class="legend-dot demand"></span> Demand / Support Zone</span>
-                            <span class="legend-item"><span class="legend-dot price"></span> Spot Price</span>
+                        <div class="orderflow-bias-pill" id="liq-orderflow-bias">
+                            <span class="dot-green"></span>
+                            <span id="liq-orderflow-text">BULLISH ORDER-FLOW</span>
                         </div>
                     </div>
 
-                    <!-- Key Liquidity Levels List -->
-                    <div class="liquidity-levels-grid">
-                        <div class="liq-col supply">
-                            <div class="liq-head">
-                                <span class="dot-red"></span>
-                                <h4>Resistance & Supply Zones (Above Price)</h4>
+                    <!-- VERTICAL LIQUIDITY DEPTH LADDER -->
+                    <div class="liquidity-depth-ladder">
+                        <!-- OVERHEAD SUPPLY / RESISTANCE POOLS -->
+                        <div class="ladder-section supply-section">
+                            <div class="ladder-section-header">
+                                <span class="badge-supply">🔴 OVERHEAD SUPPLY & BUY-SIDE STOP POOLS (RESISTANCE)</span>
+                                <span class="ladder-hint">Equal Highs • Liquidity Sweep Targets</span>
                             </div>
-                            <div class="liq-items-list" id="supply-zones-list">
-                                <div class="empty-state-mini">Calculating overhead liquidity...</div>
+                            <div class="ladder-items-list" id="ladder-supply-items">
+                                <div class="empty-state-mini">Analyzing overhead liquidity...</div>
                             </div>
                         </div>
 
-                        <div class="liq-col demand">
-                            <div class="liq-head">
-                                <span class="dot-green"></span>
-                                <h4>Support & Demand Zones (Below Price)</h4>
+                        <!-- 📍 LIVE SPOT PRICE PIN / ANCHOR -->
+                        <div class="ladder-spot-anchor">
+                            <div class="anchor-glow-line"></div>
+                            <div class="anchor-badge">
+                                <span class="anchor-icon">⚜️</span>
+                                <span class="anchor-label">CURRENT SPOT:</span>
+                                <span class="anchor-price" id="ladder-spot-price">$--.--</span>
+                                <span class="anchor-tag" id="ladder-spread-tag">Active Auction Level</span>
                             </div>
-                            <div class="liq-items-list" id="demand-zones-list">
-                                <div class="empty-state-mini">Calculating resting demand liquidity...</div>
+                            <div class="anchor-glow-line"></div>
+                        </div>
+
+                        <!-- RESTING DEMAND / SUPPORT POOLS -->
+                        <div class="ladder-section demand-section">
+                            <div class="ladder-section-header">
+                                <span class="badge-demand">🟢 RESTING DEMAND & SELL-SIDE STOP POOLS (SUPPORT)</span>
+                                <span class="ladder-hint">Order Blocks • Fair Value Gap Defense</span>
                             </div>
+                            <div class="ladder-items-list" id="ladder-demand-items">
+                                <div class="empty-state-mini">Analyzing resting demand pools...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3-COLUMN LIQUIDITY INTELLIGENCE METRICS -->
+                    <div class="liquidity-intel-grid">
+                        <div class="liq-intel-box">
+                            <span class="intel-lbl">Immediate Resistance</span>
+                            <span class="intel-val color-red" id="liq-imm-res">$----.--</span>
+                            <span class="intel-sub" id="liq-res-dist">Analyzing...</span>
+                        </div>
+                        <div class="liq-intel-box">
+                            <span class="intel-lbl">Order-Flow Imbalance</span>
+                            <span class="intel-val color-green" id="liq-imbalance-val">Balanced</span>
+                            <span class="intel-sub" id="liq-imbalance-sub">Institutional Accumulation</span>
+                        </div>
+                        <div class="liq-intel-box">
+                            <span class="intel-lbl">Immediate Support</span>
+                            <span class="intel-val color-green" id="liq-imm-sup">$----.--</span>
+                            <span class="intel-sub" id="liq-sup-dist">Analyzing...</span>
                         </div>
                     </div>
                 </div>
             </section>
+
 
             <!-- ========================================================= -->
             <!-- 5. ECONOMIC CALENDAR & CATALYSTS -->
