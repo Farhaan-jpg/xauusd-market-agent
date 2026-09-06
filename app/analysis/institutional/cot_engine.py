@@ -39,17 +39,18 @@ class InstitutionalCOTEngine:
 
         # Baseline institutional benchmarks derived from latest CFTC Disaggregated COT reporting
         # Dynamic modulation:
-        # 1. Price momentum effect: Gold above $2,700 benchmark increases speculative long appetite
-        price_diff = max(-500.0, min(1000.0, gold_price - 2700.0))
+        # 1. Price momentum effect: Gold relative to $4,400 benchmark
+        price_diff = max(-500.0, min(1000.0, gold_price - 4400.0))
         price_contract_adj = int(price_diff * 42.0)
 
-        # 2. Dollar effect: DXY below 104.0 adds long demand; DXY above 104.0 adds short pressure
-        dxy_diff = 104.0 - dxy
+        # 2. Dollar effect: DXY relative to 100.0 baseline
+        dxy_diff = 100.0 - dxy
         dxy_contract_adj = int(dxy_diff * 9500.0)
 
-        # 3. Yield effect: 10Y Yield below 4.25% expands non-yielding bullion holdings
-        yield_diff = 4.25 - us10y
+        # 3. Yield effect: 10Y Yield relative to 4.75% benchmark
+        yield_diff = 4.75 - us10y
         yield_contract_adj = int(yield_diff * 18000.0)
+
 
         base_longs = 232000
         base_shorts = 44000

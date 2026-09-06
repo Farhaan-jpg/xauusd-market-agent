@@ -33,21 +33,21 @@ class MacroDataProvider(BaseDataProvider):
         results = {}
 
         # 1. DXY / US Dollar Index (DX-Y.NYB or UUP)
-        dxy_data = self._get_ticker_snapshot(["DX-Y.NYB", "UUP"], default_price=104.25, default_symbol="DX-Y.NYB")
+        dxy_data = self._get_ticker_snapshot(["DX-Y.NYB", "UUP"], default_price=99.16, default_symbol="DX-Y.NYB")
         results["dxy"] = dxy_data
 
-        # 2. US 10-Year Yield (^TNX is yield * 10, e.g. 42.80 = 4.28%)
-        us10y_data = self._get_ticker_snapshot(["^TNX", "IEF"], default_price=42.80, default_symbol="^TNX")
+        # 2. US 10-Year Yield (^TNX is yield, e.g. 4.78 = 4.78%)
+        us10y_data = self._get_ticker_snapshot(["^TNX", "IEF"], default_price=4.78, default_symbol="^TNX")
         if us10y_data and us10y_data.get("price") and us10y_data["price"] > 10.0 and ("^TNX" in us10y_data.get("symbol", "") or "TNX" in us10y_data.get("symbol", "")):
             us10y_data["yield_pct"] = round(us10y_data["price"] / 10.0, 3)
         elif us10y_data and us10y_data.get("price") and us10y_data["price"] <= 10.0:
             us10y_data["yield_pct"] = round(us10y_data["price"], 3)
         else:
-            us10y_data["yield_pct"] = 4.28
+            us10y_data["yield_pct"] = 4.78
         results["us10y"] = us10y_data
 
-        # 3. US 2-Year Yield (^IRX 13-week bill / 2Y proxy, e.g. 41.50 = 4.15%)
-        us2y_data = self._get_ticker_snapshot(["^IRX", "SHY"], default_price=41.50, default_symbol="^IRX")
+        # 3. US 2-Year Yield (^IRX 13-week bill / 2Y proxy, e.g. 4.15 = 4.15%)
+        us2y_data = self._get_ticker_snapshot(["^IRX", "SHY"], default_price=4.15, default_symbol="^IRX")
         if us2y_data and us2y_data.get("price") and us2y_data["price"] > 10.0 and ("^IRX" in us2y_data.get("symbol", "") or "IRX" in us2y_data.get("symbol", "")):
             us2y_data["yield_pct"] = round(us2y_data["price"] / 10.0, 3)
         elif us2y_data and us2y_data.get("price") and us2y_data["price"] <= 10.0:
@@ -61,11 +61,11 @@ class MacroDataProvider(BaseDataProvider):
         results["tip"] = tip_data
 
         # 5. Risk Sentiment / VIX
-        vix_data = self._get_ticker_snapshot(["^VIX"], default_price=15.80, default_symbol="^VIX")
+        vix_data = self._get_ticker_snapshot(["^VIX"], default_price=14.53, default_symbol="^VIX")
         results["vix"] = vix_data
 
         # Yield Curve Spread (10Y - 2Y)
-        y10 = results["us10y"].get("yield_pct", 4.28)
+        y10 = results["us10y"].get("yield_pct", 4.78)
         y2 = results["us2y"].get("yield_pct", 4.15)
         results["yield_spread_10y_2y"] = round(y10 - y2, 3)
 
@@ -93,7 +93,6 @@ class MacroDataProvider(BaseDataProvider):
                 logger.debug(f"Could not fetch macro symbol {sym}: {e}")
                 continue
 
-        # If live ticker fetch failed on host, use calibrated benchmark baseline
         return {
             "symbol": default_symbol or symbols[0],
             "price": round(default_price, 4),
@@ -101,16 +100,16 @@ class MacroDataProvider(BaseDataProvider):
             "available": True
         }
 
-
     def _get_fallback_macro_data(self) -> Dict[str, Any]:
         return {
-            "dxy": {"symbol": "DX-Y.NYB", "price": 104.25, "change_pct": 0.0, "available": True},
-            "us10y": {"symbol": "^TNX", "price": 42.80, "yield_pct": 4.28, "change_pct": 0.0, "available": True},
-            "us2y": {"symbol": "^IRX", "price": 41.50, "yield_pct": 4.15, "change_pct": 0.0, "available": True},
+            "dxy": {"symbol": "DX-Y.NYB", "price": 99.16, "change_pct": 0.0, "available": True},
+            "us10y": {"symbol": "^TNX", "price": 4.78, "yield_pct": 4.78, "change_pct": 0.0, "available": True},
+            "us2y": {"symbol": "^IRX", "price": 4.15, "yield_pct": 4.15, "change_pct": 0.0, "available": True},
             "tip": {"symbol": "TIP", "price": 107.50, "change_pct": 0.0, "available": True},
-            "vix": {"symbol": "^VIX", "price": 15.80, "change_pct": 0.0, "available": True},
-            "yield_spread_10y_2y": 0.13,
+            "vix": {"symbol": "^VIX", "price": 14.53, "change_pct": 0.0, "available": True},
+            "yield_spread_10y_2y": 0.63,
             "timestamp": datetime.now(timezone.utc),
             "status": "FALLBACK"
         }
+
 
