@@ -1203,6 +1203,52 @@ body {
     background: rgba(255, 255, 255, 0.08);
     color: var(--text-muted);
 }
+.badge-neutral.bull {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+}
+.badge-neutral.bear {
+    background: rgba(244, 63, 94, 0.18);
+    border: 1px solid rgba(244, 63, 94, 0.35);
+    color: #fda4af;
+}
+
+/* COT Metrics 2-column Grid inside Card */
+.cot-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.cot-sub-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cot-lbl {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+.cot-val {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.cot-sub {
+    font-size: 0.66rem;
+    color: var(--text-muted);
+}
+
 
 /* ==============================================================================
    4. INSTITUTIONAL LIQUIDITY RADAR & DEPTH LADDER

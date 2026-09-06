@@ -97,14 +97,15 @@ function setupAutoRefresh(seconds) {
 
 async function fetchFullDashboard() {
     try {
-        const [reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes] = await Promise.allSettled([
+        const [reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes] = await Promise.allSettled([
             fetch("/api/latest-report").then(r => r.json()),
             fetch("/api/market-data").then(r => r.json()),
             fetch("/api/news").then(r => r.json()),
             fetch("/api/macro").then(r => r.json()),
             fetch("/api/liquidity").then(r => r.json()),
             fetch("/api/economic-calendar").then(r => r.json()),
-            fetch("/api/geopolitics").then(r => r.json())
+            fetch("/api/geopolitics").then(r => r.json()),
+            fetch("/api/institutional-flow").then(r => r.json())
         ]);
 
         if (reportRes.status === "fulfilled") updateExecutiveReport(reportRes.value);
@@ -114,6 +115,7 @@ async function fetchFullDashboard() {
         if (liqRes.status === "fulfilled") updateLiquidityData(liqRes.value);
         if (calRes.status === "fulfilled") updateCalendarData(calRes.value);
         if (geoRes.status === "fulfilled") updateGeopolitics(geoRes.value);
+        if (cotRes.status === "fulfilled") updateInstitutionalFlow(cotRes.value);
 
     } catch (err) {
         console.error("Dashboard refresh error:", err);
@@ -422,6 +424,58 @@ function updateGeopolitics(data) {
     const summaryEl = document.getElementById("geo-summary-text");
     if (summaryEl && data.summary) {
         summaryEl.textContent = data.summary;
+    }
+}
+
+function updateInstitutionalFlow(data) {
+    if (!data) return;
+
+    // Badge
+    const biasBadge = document.getElementById("cot-bias-badge");
+    if (biasBadge && data.institutional_bias) {
+        const isAcc = data.institutional_bias.includes("ACCUMULATION");
+        const isLiq = data.institutional_bias.includes("LIQUIDATION");
+        biasBadge.textContent = isAcc ? "SMART-MONEY ACCUMULATION" : isLiq ? "HEAVY LIQUIDATION" : "BALANCED POSITIONING";
+        biasBadge.className = `badge-neutral ${isAcc ? 'bull' : isLiq ? 'bear' : ''}`;
+    }
+
+    // Hedge fund net position
+    const netEl = document.getElementById("cot-net-contracts");
+    const ratioEl = document.getElementById("cot-ratio");
+    if (data.managed_money) {
+        const net = data.managed_money.net_contracts || 0;
+        const sign = net > 0 ? "+" : "";
+        if (netEl) netEl.textContent = `${sign}${(net / 1000).toFixed(1)}k Contracts`;
+        if (ratioEl && data.managed_money.long_short_ratio) {
+            ratioEl.textContent = `L/S Ratio: ${data.managed_money.long_short_ratio.toFixed(1)}x`;
+        }
+    }
+
+    // Central bank run rate
+    const cbPaceEl = document.getElementById("cot-cb-pace");
+    const cbBanksEl = document.getElementById("cot-top-banks");
+    if (data.central_banks) {
+        if (cbPaceEl && data.central_banks.annual_pace_tonnes) {
+            cbPaceEl.textContent = `${Math.round(data.central_banks.annual_pace_tonnes)} T/yr`;
+        }
+        if (cbBanksEl && Array.isArray(data.central_banks.top_accumulators)) {
+            const shortNames = data.central_banks.top_accumulators.slice(0, 3).map(b => b.country.split(' ')[0]).join(' • ');
+            cbBanksEl.textContent = shortNames || "PBoC • RBI • NBP";
+        }
+    }
+
+    // Historical Percentile
+    const pctEl = document.getElementById("cot-percentile-val");
+    if (pctEl && data.managed_money && data.managed_money.percentile_rank !== undefined) {
+        const pct = Math.round(data.managed_money.percentile_rank);
+        pctEl.textContent = `${pct}th Percentile (${pct >= 70 ? 'Bullish Dominance' : pct <= 30 ? 'Bearish' : 'Neutral'})`;
+        pctEl.className = `geo-stat-val ${pct >= 70 ? 'color-green' : pct <= 30 ? 'color-red' : 'color-gold'}`;
+    }
+
+    // Narrative
+    const sumEl = document.getElementById("cot-summary-text");
+    if (sumEl && data.narrative) {
+        sumEl.textContent = data.narrative;
     }
 }
 

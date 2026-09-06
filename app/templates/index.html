@@ -348,14 +348,26 @@
                         <div class="card-header">
                             <div class="header-title">
                                 <span class="card-icon">🏛️</span>
-                                <h3>Institutional Positioning</h3>
+                                <h3>Institutional & CFTC COT Flow</h3>
                             </div>
                             <span class="badge-neutral" id="cot-bias-badge">BALANCED</span>
                         </div>
                         <div class="card-body">
-                            <div class="geo-stat-row">
-                                <span class="geo-stat-lbl">Institutional Flow:</span>
-                                <span class="geo-stat-val" id="cot-flow-val">Net Neutral</span>
+                            <div class="cot-metrics-grid">
+                                <div class="cot-sub-box">
+                                    <span class="cot-lbl">Hedge Fund Net Position</span>
+                                    <span class="cot-val color-green" id="cot-net-contracts">Loading...</span>
+                                    <span class="cot-sub" id="cot-ratio">L/S Ratio: --</span>
+                                </div>
+                                <div class="cot-sub-box">
+                                    <span class="cot-lbl">Central Bank Run-Rate</span>
+                                    <span class="cot-val color-gold" id="cot-cb-pace">Loading...</span>
+                                    <span class="cot-sub" id="cot-top-banks">PBoC • RBI • NBP</span>
+                                </div>
+                            </div>
+                            <div class="geo-stat-row" style="margin-top: 10px;">
+                                <span class="geo-stat-lbl">Historical Positioning:</span>
+                                <span class="geo-stat-val color-green" id="cot-percentile-val">-- Percentile</span>
                             </div>
                             <p class="geo-narrative" id="cot-summary-text">
                                 Tracking CFTC Commitment of Traders (COT) net non-commercial contracts and central bank reserves.
