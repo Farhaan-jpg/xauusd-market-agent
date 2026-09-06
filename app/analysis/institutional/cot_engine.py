@@ -124,11 +124,18 @@ class InstitutionalCOTEngine:
             "central_banks": {
                 "quarterly_pace_tonnes": central_bank_quarterly_tonnes,
                 "annualized_demand_tonnes": central_bank_annual_pace_tonnes,
+                "annual_pace_tonnes": central_bank_annual_pace_tonnes,
                 "structural_floor_support": "STRONG_LONG_TERM_PIVOT",
-                "top_buyers": top_accumulating_banks
+                "top_buyers": top_accumulating_banks,
+                "top_accumulators": top_accumulating_banks
             },
             "open_interest_total": total_open_interest,
             "summary_statement": (
+                f"CFTC Managed Money holds +{net_managed_money:,} Net Long contracts ({long_short_ratio}:1 Long/Short ratio), "
+                f"expanding by {net_change_4w:+,} contracts over the past month. Sovereign Central Bank buying run-rate remains robust at "
+                f"~{central_bank_quarterly_tonnes:.0f}T/quarter, providing structural bullion floor support."
+            ),
+            "narrative": (
                 f"CFTC Managed Money holds +{net_managed_money:,} Net Long contracts ({long_short_ratio}:1 Long/Short ratio), "
                 f"expanding by {net_change_4w:+,} contracts over the past month. Sovereign Central Bank buying run-rate remains robust at "
                 f"~{central_bank_quarterly_tonnes:.0f}T/quarter, providing structural bullion floor support."

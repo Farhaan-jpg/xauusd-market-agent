@@ -443,7 +443,7 @@ function updateInstitutionalFlow(data) {
     if (biasBadge && data.institutional_bias) {
         const isAcc = data.institutional_bias.includes("ACCUMULATION");
         const isLiq = data.institutional_bias.includes("LIQUIDATION");
-        biasBadge.textContent = isAcc ? "SMART-MONEY ACCUMULATION" : isLiq ? "HEAVY LIQUIDATION" : "BALANCED POSITIONING";
+        biasBadge.textContent = data.bias_label || (isAcc ? "SMART-MONEY ACCUMULATION" : isLiq ? "HEAVY LIQUIDATION" : "BALANCED POSITIONING");
         biasBadge.className = `badge-neutral ${isAcc ? 'bull' : isLiq ? 'bear' : ''}`;
     }
 
@@ -455,7 +455,7 @@ function updateInstitutionalFlow(data) {
         const sign = net > 0 ? "+" : "";
         if (netEl) netEl.textContent = `${sign}${(net / 1000).toFixed(1)}k Contracts`;
         if (ratioEl && data.managed_money.long_short_ratio) {
-            ratioEl.textContent = `L/S Ratio: ${data.managed_money.long_short_ratio.toFixed(1)}x`;
+            ratioEl.textContent = `L/S Ratio: ${Number(data.managed_money.long_short_ratio).toFixed(1)}x`;
         }
     }
 
@@ -463,11 +463,14 @@ function updateInstitutionalFlow(data) {
     const cbPaceEl = document.getElementById("cot-cb-pace");
     const cbBanksEl = document.getElementById("cot-top-banks");
     if (data.central_banks) {
-        if (cbPaceEl && data.central_banks.annual_pace_tonnes) {
-            cbPaceEl.textContent = `${Math.round(data.central_banks.annual_pace_tonnes)} T/yr`;
+        const annualPace = data.central_banks.annual_pace_tonnes || data.central_banks.annualized_demand_tonnes || 
+                           (data.central_banks.quarterly_pace_tonnes ? data.central_banks.quarterly_pace_tonnes * 4 : 1140);
+        if (cbPaceEl) {
+            cbPaceEl.textContent = `${Math.round(annualPace)} T/yr`;
         }
-        if (cbBanksEl && Array.isArray(data.central_banks.top_accumulators)) {
-            const shortNames = data.central_banks.top_accumulators.slice(0, 3).map(b => b.country.split(' ')[0]).join(' • ');
+        const buyers = data.central_banks.top_accumulators || data.central_banks.top_buyers || [];
+        if (cbBanksEl && Array.isArray(buyers) && buyers.length > 0) {
+            const shortNames = buyers.slice(0, 3).map(b => (b.country || "").split(' ')[0]).filter(Boolean).join(' • ');
             cbBanksEl.textContent = shortNames || "PBoC • RBI • NBP";
         }
     }
@@ -482,8 +485,9 @@ function updateInstitutionalFlow(data) {
 
     // Narrative
     const sumEl = document.getElementById("cot-summary-text");
-    if (sumEl && data.narrative) {
-        sumEl.textContent = data.narrative;
+    const narrativeText = data.narrative || data.summary_statement || data.summary;
+    if (sumEl && narrativeText) {
+        sumEl.textContent = narrativeText;
     }
 }
 
