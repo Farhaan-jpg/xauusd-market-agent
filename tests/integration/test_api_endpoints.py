@@ -106,6 +106,15 @@ async def test_dashboard_and_api_endpoints():
         assert post_cfg_resp.status_code == 200
         assert post_cfg_resp.json()["status"] == "SUCCESS"
 
+        # Sync News POST API
+        sync_resp = await client.post("/api/sync-news?force_analysis=false")
+        assert sync_resp.status_code == 200
+        sync_json = sync_resp.json()
+        assert sync_json["status"] == "SUCCESS"
+        assert "new_articles_count" in sync_json
+        assert "direction" in sync_json
+
+
 @pytest.mark.asyncio
 async def test_session_open_briefing_alert_dispatch():
     """Verify session briefing alert logic."""

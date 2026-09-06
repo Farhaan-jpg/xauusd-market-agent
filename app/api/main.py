@@ -493,3 +493,34 @@ async def trigger_analysis(background_tasks: BackgroundTasks) -> Dict[str, str]:
     """Manually triggers an immediate analysis cycle."""
     background_tasks.add_task(orchestrator.run_cycle, True)
     return {"status": "SUCCESS", "message": "Analysis cycle triggered in background."}
+
+@app.post("/api/sync-news")
+async def sync_news(force_analysis: bool = False) -> Dict[str, Any]:
+    """
+    Instantly fetches latest RSS news feeds, persists new articles,
+    and recalculates intelligence synthesis if new news is detected or forced.
+    """
+    try:
+        news_data = await orchestrator.news_provider.fetch()
+        new_items = []
+        if news_data:
+            new_items = await Repository.save_news_events(news_data)
+        
+        reanalyzed = False
+        if len(new_items) > 0 or force_analysis:
+            await orchestrator.run_cycle(force_report=False)
+            reanalyzed = True
+            
+        latest_run = await Repository.get_latest_analysis_run()
+        return {
+            "status": "SUCCESS",
+            "new_articles_count": len(new_items),
+            "reanalyzed": reanalyzed,
+            "direction": latest_run.direction if latest_run else "NEUTRAL",
+            "score": latest_run.direction_score if latest_run else 0.0,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in sync_news: {e}")
+        return {"status": "ERROR", "message": str(e)}
+

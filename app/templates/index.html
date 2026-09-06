@@ -2,1057 +2,520 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-    <title>XAUUSD AI Market Intelligence & Liquidity Agent</title>
-    <meta name="description" content="Autonomous quantitative market intelligence, macro evidence engine, and order-flow liquidity radar for XAUUSD Gold.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>XAUUSD AI Agent — Quantitative Intelligence & Liquidity Radar</title>
+    <meta name="description" content="Autonomous Gold (XAUUSD) AI intelligence agent synthesizing real-time macro indicators, liquidity order-flow, and instant breaking news catalysts.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚜️</text></svg>">
     
-    <!-- Modern Google Fonts -->
+    <!-- Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- Ambient Dynamic Background Gradients -->
-    <div class="ambient-glow glow-gold"></div>
-    <div class="ambient-glow glow-cyan"></div>
-    <div class="ambient-glow glow-crimson"></div>
-    <div class="bg-noise"></div>
+    <!-- Subtle Background Ambient Glows -->
+    <div class="glow-orb orb-gold"></div>
+    <div class="glow-orb orb-emerald"></div>
+    <div class="glow-orb orb-cyan"></div>
 
-    <div class="app-layout">
-        <!-- TOP COMMAND & HEADER BAR -->
-        <header class="app-header glass-panel">
-            <div class="header-brand">
-                <div class="brand-badge">
-                    <span class="gold-emblem">⚜</span>
-                </div>
-                <div class="brand-titles">
-                    <div class="brand-title-row">
-                        <h1>XAUUSD <span>QUANT INTELLIGENCE</span></h1>
-                        <span class="version-tag">v1.0</span>
+    <div class="dashboard-wrapper">
+        <!-- TOP APP BAR -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <div class="brand-box">
+                    <span class="brand-crest">⚜</span>
+                    <div class="brand-info">
+                        <span class="brand-name">XAUUSD <span class="accent-gold">AGENT</span></span>
+                        <span class="brand-sub">Real-Time Macro & News Intel</span>
                     </div>
-                    <p class="brand-tagline">Autonomous Macro Synthesis & Liquidity Order-Flow Engine</p>
+                </div>
+
+                <!-- Active Market Sessions -->
+                <div class="session-badges">
+                    <span class="session-pill" id="sess-lon" title="London Session (07:00 - 16:00 UTC)">
+                        <span class="dot"></span> LON
+                    </span>
+                    <span class="session-pill" id="sess-ny" title="New York Session (12:00 - 21:00 UTC)">
+                        <span class="dot"></span> NY
+                    </span>
+                    <span class="session-pill" id="sess-tok" title="Tokyo Session (00:00 - 09:00 UTC)">
+                        <span class="dot"></span> TKO
+                    </span>
                 </div>
             </div>
 
-            <!-- GLOBAL MARKET SESSIONS INDICATOR -->
-            <div class="market-sessions-bar" id="market-sessions-bar">
-                <div class="session-pill" id="session-sydney" title="Sydney Session (21:00 - 06:00 UTC)">
-                    <span class="session-dot"></span> SYD
-                </div>
-                <div class="session-pill" id="session-tokyo" title="Tokyo Session (00:00 - 09:00 UTC)">
-                    <span class="session-dot"></span> TKO
-                </div>
-                <div class="session-pill" id="session-london" title="London Session (07:00 - 16:00 UTC)">
-                    <span class="session-dot"></span> LON
-                </div>
-                <div class="session-pill" id="session-ny" title="New York Session (12:00 - 21:00 UTC)">
-                    <span class="session-dot"></span> NY
-                </div>
-            </div>
-
-            <!-- QUICK ACTIONS & CONTROLS -->
-            <div class="header-controls">
-                <div class="status-pill live-pulse" id="system-status-badge">
-                    <span class="pulse-core"></span>
-                    <span class="status-label" id="system-status-text">LIVE ENGINE</span>
+            <!-- Price Ticker & Action Buttons -->
+            <div class="nav-right">
+                <div class="spot-price-card" id="spot-price-container">
+                    <div class="price-row">
+                        <span class="currency">$</span>
+                        <span class="price-val" id="live-gold-price">----.--</span>
+                        <span class="change-tag" id="live-price-change">+0.00%</span>
+                    </div>
+                    <div class="price-range-mini">
+                        <span class="range-txt">L: $<span id="mini-low">---</span></span>
+                        <div class="mini-bar-track">
+                            <div class="mini-bar-fill" id="mini-range-fill"></div>
+                        </div>
+                        <span class="range-txt">H: $<span id="mini-high">---</span></span>
+                    </div>
                 </div>
 
-                <div class="refresh-control" title="Auto-Refresh Interval">
-                    <select id="auto-refresh-select" class="control-select">
-                        <option value="10">⚡ 10s</option>
-                        <option value="20" selected>⚡ 20s</option>
-                        <option value="60">⚡ 60s</option>
-                        <option value="0">⏸ Pause</option>
-                    </select>
+                <div class="nav-actions">
+                    <button class="action-btn btn-sync" id="btn-quick-sync" title="Instant News Fetch & AI Synthesis">
+                        <span class="btn-icon sync-icon">⚡</span>
+                        <span class="btn-lbl">Sync Intel</span>
+                    </button>
+                    <button class="action-btn btn-settings" id="btn-open-settings" title="Settings & Telegram Alerts">
+                        <span class="btn-icon">⚙️</span>
+                    </button>
                 </div>
-
-                <button class="btn-ctrl btn-secondary" id="btn-open-settings" aria-label="Open Agent Settings" title="Configure Keys, Telegram & AI Models">
-                    <span class="btn-icon">⚙️</span>
-                    <span class="btn-text">Controls</span>
-                </button>
-
-                <button class="btn-ctrl btn-primary" id="btn-trigger" aria-label="Run Intelligence Cycle" title="Trigger Instant Quantitative Cycle">
-                    <span class="btn-icon refresh-anim">🔄</span>
-                    <span class="btn-text">Run Intel</span>
-                </button>
             </div>
         </header>
 
-        <!-- HERO EXECUTIVE KPI STRIP -->
-        <section class="hero-kpi-grid">
-            <!-- 1. SPOT XAUUSD PRICE -->
-            <div class="kpi-card glass-panel" id="card-price">
-                <div class="kpi-header">
-                    <span class="kpi-label">XAUUSD SPOT GOLD</span>
-                    <span class="kpi-tag" id="price-change-tag">24h: +0.00%</span>
-                </div>
-                <div class="kpi-body">
-                    <div class="price-display">
-                        <span class="currency-glyph">$</span>
-                        <span class="price-digits mono-num" id="gold-price">---.--</span>
-                    </div>
-                </div>
-                <div class="kpi-footer">
-                    <div class="range-bar-wrapper">
-                        <div class="range-labels">
-                            <span>L: $<span id="price-low-24h">---</span></span>
-                            <span>H: $<span id="price-high-24h">---</span></span>
-                        </div>
-                        <div class="range-track">
-                            <div class="range-indicator" id="price-range-indicator" style="left: 50%;"></div>
-                        </div>
-                    </div>
-                </div>
+        <!-- FLASH NEWS NOTIFICATION TOAST (Shows immediately when new news alters analysis) -->
+        <div class="breaking-banner" id="breaking-banner" style="display: none;">
+            <div class="banner-content">
+                <span class="banner-pulse">🚨 BREAKING NEWS CAPTURED:</span>
+                <span class="banner-text" id="breaking-headline">Federal Reserve holds emergency liquidity discussions.</span>
             </div>
+            <button class="banner-close" id="btn-close-banner" aria-label="Dismiss">✕</button>
+        </div>
 
-            <!-- 2. MARKET DIRECTION & VERDICT -->
-            <div class="kpi-card glass-panel" id="card-direction">
-                <div class="kpi-header">
-                    <span class="kpi-label">DIRECTIONAL BIAS</span>
-                    <span class="score-badge mono-num" id="direction-score">0.0 / 100</span>
-                </div>
-                <div class="kpi-body">
-                    <div class="direction-pill neutral" id="direction-badge">
-                        <span class="dir-icon">⚪</span>
-                        <span class="dir-text">CALCULATING</span>
-                    </div>
-                </div>
-                <div class="kpi-footer">
-                    <span class="kpi-subtext" id="verdict-summary-kpi">Synthesizing macro, yields & order-flow</span>
-                </div>
-            </div>
-
-            <!-- 3. CONFIDENCE & INTEGRITY -->
-            <div class="kpi-card glass-panel" id="card-confidence">
-                <div class="kpi-header">
-                    <span class="kpi-label">CONFIDENCE INDEX</span>
-                    <span class="quality-badge" id="data-quality-pill">HIGH_INTEGRITY</span>
-                </div>
-                <div class="kpi-body confidence-body">
-                    <div class="confidence-radial-container">
-                        <svg class="radial-svg" viewBox="0 0 36 36">
-                            <path class="radial-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="radial-fill" id="confidence-radial-bar" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                        </svg>
-                        <div class="radial-text">
-                            <span class="confidence-pct mono-num" id="confidence-pct">--</span><span class="pct-sign">%</span>
-                        </div>
-                    </div>
-                    <div class="confidence-details">
-                        <span class="conf-status-title">Statistical Weight</span>
-                        <span class="conf-status-desc" id="conf-status-desc">Multi-Signal Convergence</span>
-                    </div>
-                </div>
-                <div class="kpi-footer">
-                    <div class="confidence-meter-track">
-                        <div class="confidence-meter-fill" id="confidence-bar" style="width: 50%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 4. MARKET REGIME & STRUCTURE -->
-            <div class="kpi-card glass-panel" id="card-regime">
-                <div class="kpi-header">
-                    <span class="kpi-label">MARKET STRUCTURE</span>
-                    <span class="atr-badge mono-num">ATR: <span id="atr-val">--</span></span>
-                </div>
-                <div class="kpi-body regime-body">
-                    <div class="regime-item">
-                        <span class="regime-key">Trend:</span>
-                        <span class="regime-val badge-neutral" id="regime-trend">ANALYZING</span>
-                    </div>
-                    <div class="regime-item">
-                        <span class="regime-key">Volatility:</span>
-                        <span class="regime-val badge-neutral" id="regime-vol">ANALYZING</span>
-                    </div>
-                </div>
-                <div class="kpi-footer">
-                    <span class="kpi-subtext">Structure derived from multi-timeframe EMA + ATR</span>
-                </div>
-            </div>
-
-            <!-- 5. ENGINE & PROVIDER STATUS -->
-            <div class="kpi-card glass-panel" id="card-engine">
-                <div class="kpi-header">
-                    <span class="kpi-label">INTELLIGENCE AGENT</span>
-                    <span class="tg-status-pill" id="tg-status-badge">🔔 TG Alerts Ready</span>
-                </div>
-                <div class="kpi-body engine-body">
-                    <div class="provider-badge" id="ai-provider-tag">
-                        <span class="provider-icon">⚡</span>
-                        <span class="provider-name">Deterministic Engine</span>
-                    </div>
-                </div>
-                <div class="kpi-footer">
-                    <div class="sync-clock">
-                        <span>Updated: </span>
-                        <span class="mono-num" id="last-updated-ts">--:--:-- IST</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- NAVIGATION TABS -->
-        <nav class="nav-tab-strip glass-panel" role="tablist">
-            <button class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-intelligence" id="btn-tab-intel">
-                <span class="tab-icon">🎯</span>
-                <span class="tab-title">Executive Intel & AI</span>
+        <!-- MAIN NAVIGATION TABS (Mobile-friendly segmented bar) -->
+        <nav class="segment-tabs">
+            <button class="seg-btn active" data-tab="tab-overview">
+                <span class="seg-icon">🎯</span>
+                <span class="seg-text">Executive Verdict</span>
             </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-liquidity" id="btn-tab-liq">
-                <span class="tab-icon">🌊</span>
-                <span class="tab-title">Liquidity Radar</span>
-                <span class="tab-badge" id="liq-zone-count">0</span>
+            <button class="seg-btn" data-tab="tab-news">
+                <span class="seg-icon">📰</span>
+                <span class="seg-text">Live News Stream</span>
+                <span class="news-counter-badge" id="news-unread-badge">LIVE</span>
             </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-technicals" id="btn-tab-tech">
-                <span class="tab-icon">📊</span>
-                <span class="tab-title">Technicals & Macro</span>
+            <button class="seg-btn" data-tab="tab-drivers">
+                <span class="seg-icon">📊</span>
+                <span class="seg-text">Macro & Drivers</span>
             </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-calendar-news" id="btn-tab-cal">
-                <span class="tab-icon">📅</span>
-                <span class="tab-title">Calendar & News</span>
+            <button class="seg-btn" data-tab="tab-chart">
+                <span class="seg-icon">🌊</span>
+                <span class="seg-text">Liquidity Radar</span>
             </button>
-            <button class="tab-btn" role="tab" aria-selected="false" data-tab="tab-accuracy" id="btn-tab-acc">
-                <span class="tab-icon">📈</span>
-                <span class="tab-title">Analytics & Accuracy</span>
+            <button class="seg-btn" data-tab="tab-calendar">
+                <span class="seg-icon">📅</span>
+                <span class="seg-text">Catalysts</span>
             </button>
         </nav>
 
-        <!-- MAIN TABBED CONTENT PANELS -->
-        <main class="tab-content-container">
-            <!-- ========================================================================= -->
-            <!-- TAB 1: EXECUTIVE INTEL & AI -->
-            <!-- ========================================================================= -->
-            <section class="tab-pane active" id="tab-intelligence" role="tabpanel">
-                <!-- HERO EXECUTIVE VERDICT BANNER -->
-                <div class="verdict-banner-modern glass-panel" id="verdict-banner">
-                    <div class="verdict-banner-header">
-                        <div class="verdict-badge-box">
-                            <span class="verdict-eyebrow">FINAL MARKET VERDICT</span>
-                            <div class="verdict-hero-badge neutral" id="final-market-verdict-badge">
-                                <span class="verdict-dot"></span>
-                                <span class="verdict-title-text">NEUTRAL (ANALYZING SYNTHESIS...)</span>
+        <!-- MAIN DASHBOARD CONTENT AREA -->
+        <main class="dashboard-main">
+            <!-- ========================================================= -->
+            <!-- 1. EXECUTIVE VERDICT & LIVE SYNTHESIS (DEFAULT VIEW) -->
+            <!-- ========================================================= -->
+            <section class="content-panel active" id="tab-overview">
+                <!-- HERO EXECUTIVE VERDICT CARD -->
+                <div class="hero-verdict-card">
+                    <div class="verdict-top-bar">
+                        <div class="verdict-label-group">
+                            <span class="eyebrow-tag">AI SYNTHESIS & DIRECTIONAL BIAS</span>
+                            <div class="verdict-badge neutral" id="hero-verdict-badge">
+                                <span class="verdict-pulse-dot"></span>
+                                <span class="verdict-title" id="hero-verdict-text">ANALYZING SIGNALS...</span>
                             </div>
                         </div>
-                        <div class="verdict-time-box">
-                            <span class="clock-label">Model Confidence</span>
-                            <span class="clock-val mono-num" id="verdict-confidence-val">--%</span>
+
+                        <div class="confidence-box">
+                            <div class="conf-radial-wrap">
+                                <svg class="conf-svg" viewBox="0 0 36 36">
+                                    <path class="conf-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                    <path class="conf-fill" id="hero-conf-fill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                </svg>
+                                <span class="conf-pct" id="hero-conf-val">--%</span>
+                            </div>
+                            <span class="conf-label">Model Confidence</span>
                         </div>
                     </div>
-                    <p class="verdict-summary-narrative" id="final-market-verdict-text">
-                        Gathering real-time market snapshots, macro indicators, US yield curve data, and news sentiment...
-                    </p>
+
+                    <!-- Executive Narrative -->
+                    <div class="verdict-narrative-box">
+                        <p class="verdict-narrative-text" id="hero-verdict-summary">
+                            Synthesizing live macroeconomic yield curves, order-flow liquidity pools, and breaking news catalysts...
+                        </p>
+                    </div>
+
+                    <!-- Catalyst Tags -->
+                    <div class="catalyst-tags-strip" id="hero-catalyst-tags">
+                        <span class="tag-pill">⏳ Synthesizing latest market intelligence...</span>
+                    </div>
+
+                    <!-- Quick Telemetry Bar -->
+                    <div class="telemetry-bar">
+                        <div class="telem-item">
+                            <span class="telem-lbl">Score:</span>
+                            <span class="telem-val" id="tele-score">0.0</span>
+                        </div>
+                        <div class="telem-item">
+                            <span class="telem-lbl">Macro Bias:</span>
+                            <span class="telem-val" id="tele-macro">--</span>
+                        </div>
+                        <div class="telem-item">
+                            <span class="telem-lbl">News Sentiment:</span>
+                            <span class="telem-val" id="tele-news">--</span>
+                        </div>
+                        <div class="telem-item">
+                            <span class="telem-lbl">Provider:</span>
+                            <span class="telem-val" id="tele-provider">AI Engine</span>
+                        </div>
+                        <div class="telem-item sync-time">
+                            <span class="telem-lbl">Last Sync:</span>
+                            <span class="telem-val" id="tele-synctime">--:--:--</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="grid-intel-layout">
-                    <!-- LEFT COLUMN: EVIDENCE MATRIX & DRIVERS -->
-                    <div class="intel-col-left">
-                        <!-- MULTI-FACTOR DETERMINISTIC MATRIX -->
-                        <div class="content-card glass-panel">
-                            <div class="card-header">
-                                <div class="header-text-group">
-                                    <h2>📊 Multi-Factor Evidence Matrix</h2>
-                                    <p class="header-sub">Deterministic Normalized Scores (-100 to +100)</p>
-                                </div>
+                <!-- 2-COLUMN ESSENTIALS GRID (Stack on mobile, side-by-side on desktop) -->
+                <div class="essentials-grid">
+                    <!-- Column 1: Dominant Drivers & Factor Matrix -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">⚡</span>
+                                <h3>Dominant Market Drivers</h3>
                             </div>
-                            <div class="evidence-matrix-list">
-                                <div class="ev-row">
-                                    <div class="ev-info">
-                                        <span class="ev-name">Macro Economic Index</span>
-                                        <span class="ev-sub">Inflation, Real Rates & Global Policy</span>
-                                    </div>
-                                    <div class="ev-bar-track">
-                                        <div class="ev-center-line"></div>
-                                        <div class="ev-bar-fill" id="ev-macro-bar"></div>
-                                    </div>
-                                    <span class="ev-score mono-num" id="ev-macro-val">0.0</span>
-                                </div>
-
-                                <div class="ev-row">
-                                    <div class="ev-info">
-                                        <span class="ev-name">US Dollar Index (DXY)</span>
-                                        <span class="ev-sub">Inverted Currency Correlation</span>
-                                    </div>
-                                    <div class="ev-bar-track">
-                                        <div class="ev-center-line"></div>
-                                        <div class="ev-bar-fill" id="ev-usd-bar"></div>
-                                    </div>
-                                    <span class="ev-score mono-num" id="ev-usd-val">0.0</span>
-                                </div>
-
-                                <div class="ev-row">
-                                    <div class="ev-info">
-                                        <span class="ev-name">US Treasury Yields (10Y / 2Y)</span>
-                                        <span class="ev-sub">Opportunity Cost & Duration Weight</span>
-                                    </div>
-                                    <div class="ev-bar-track">
-                                        <div class="ev-center-line"></div>
-                                        <div class="ev-bar-fill" id="ev-yield-bar"></div>
-                                    </div>
-                                    <span class="ev-score mono-num" id="ev-yield-val">0.0</span>
-                                </div>
-
-                                <div class="ev-row">
-                                    <div class="ev-info">
-                                        <span class="ev-name">Geopolitical & News Sentiment</span>
-                                        <span class="ev-sub">Safe-Haven Demand & Risk Premium</span>
-                                    </div>
-                                    <div class="ev-bar-track">
-                                        <div class="ev-center-line"></div>
-                                        <div class="ev-bar-fill" id="ev-news-bar"></div>
-                                    </div>
-                                    <span class="ev-score mono-num" id="ev-news-val">0.0</span>
-                                </div>
-
-                                <div class="ev-row">
-                                    <div class="ev-info">
-                                        <span class="ev-name">Multi-Timeframe Technicals</span>
-                                        <span class="ev-sub">Trend, Momentum, Volatility & RSI</span>
-                                    </div>
-                                    <div class="ev-bar-track">
-                                        <div class="ev-center-line"></div>
-                                        <div class="ev-bar-fill" id="ev-tech-bar"></div>
-                                    </div>
-                                    <span class="ev-score mono-num" id="ev-tech-val">0.0</span>
-                                </div>
-                            </div>
+                            <span class="card-hint">Key Influencers</span>
                         </div>
-
-                        <!-- DOMINANT DRIVERS & EVIDENCE PILLS -->
-                        <div class="content-card glass-panel">
-                            <div class="card-header">
-                                <div class="header-text-group">
-                                    <h2>⚡ Dominant Market Drivers</h2>
-                                    <p class="header-sub">Primary forces dictating price action</p>
-                                </div>
+                        <div class="card-body">
+                            <div class="drivers-list" id="dominant-drivers-list">
+                                <div class="empty-state-mini">Loading dominant drivers...</div>
                             </div>
-                            <div class="drivers-container" id="dominant-drivers-list">
-                                <div class="driver-empty">Evaluating multi-signal drivers...</div>
+
+                            <div class="factor-split">
+                                <div class="factor-col supporting">
+                                    <span class="factor-header">✅ Supporting</span>
+                                    <ul class="factor-list" id="supporting-factors-list">
+                                        <li>Analyzing factors...</li>
+                                    </ul>
+                                </div>
+                                <div class="factor-col contradicting">
+                                    <span class="factor-header">⚠️ Headwinds</span>
+                                    <ul class="factor-list" id="contradicting-factors-list">
+                                        <li>Analyzing factors...</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- RIGHT COLUMN: NARRATIVES & RISK WATCH -->
-                    <div class="intel-col-right">
-                        <!-- MACRO ENVIRONMENT NARRATIVE -->
-                        <div class="content-card glass-panel">
-                            <div class="card-header">
-                                <div class="header-text-group">
-                                    <h2>🌐 Macroeconomic Environment</h2>
-                                    <p class="header-sub">Global liquidity, central bank stance & yields</p>
-                                </div>
+                    <!-- Column 2: Breaking News Live Preview & Instant Status -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🚨</span>
+                                <h3>Latest News Catalysts</h3>
                             </div>
-                            <div class="narrative-box">
-                                <p id="macro-narrative" class="narrative-text">Loading macro synthesis...</p>
-                            </div>
+                            <button class="card-action-btn" id="btn-view-all-news">View All News ➔</button>
                         </div>
-
-                        <!-- NEWS & GEOPOLITICAL SYNTHESIS -->
-                        <div class="content-card glass-panel">
-                            <div class="card-header">
-                                <div class="header-text-group">
-                                    <h2>📰 News & Geopolitical Context</h2>
-                                    <p class="header-sub">Real-time catalysts & market developments</p>
-                                </div>
+                        <div class="card-body">
+                            <div class="news-preview-list" id="news-preview-container">
+                                <div class="empty-state-mini">Fetching real-time news feeds...</div>
                             </div>
-                            <div class="narrative-box">
-                                <p id="news-narrative" class="narrative-text">Loading news synthesis...</p>
-                            </div>
-                        </div>
-
-                        <!-- TAIL RISKS & VOLATILITY WARNINGS -->
-                        <div class="content-card glass-panel risk-card">
-                            <div class="card-header">
-                                <div class="header-text-group">
-                                    <h2>⚠️ Tail Risks & Invalidation Catalysts</h2>
-                                    <p class="header-sub">Key threat vectors to current bias</p>
-                                </div>
-                            </div>
-                            <div class="narrative-box">
-                                <p id="risk-narrative" class="narrative-text risk-text">Scanning volatility watchpoints...</p>
+                            <div class="news-feed-status">
+                                <span class="live-dot-pulse"></span>
+                                <span>Capturing RSS feeds & recalculating live sentiment</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ========================================================================= -->
-            <!-- TAB 2: LIQUIDITY RADAR (INSTITUTIONAL DEPTH HEATMAP & VOLUME PROFILE) -->
-            <!-- ========================================================================= -->
-            <section class="tab-pane" id="tab-liquidity" role="tabpanel">
-                <!-- 1. TOP LIQUIDITY METRICS & IMBALANCE RIBBON -->
-                <div class="liquidity-metrics-grid">
-                    <!-- 1. IMBALANCE RATIO -->
-                    <div class="content-card glass-panel liq-metric-box">
-                        <div class="liq-metric-header">
-                            <span class="liq-metric-title">POOL IMBALANCE RATIO</span>
-                            <span class="liq-bias-badge" id="liq-imbalance-badge">BALANCED</span>
+            <!-- ========================================================= -->
+            <!-- 2. FULL LIVE NEWS STREAM & CATALYST RADAR -->
+            <!-- ========================================================= -->
+            <section class="content-panel" id="tab-news">
+                <div class="news-panel-card">
+                    <div class="panel-head">
+                        <div class="panel-title-group">
+                            <span class="panel-icon">📰</span>
+                            <div>
+                                <h2>Real-Time News Stream</h2>
+                                <p class="panel-subtitle">Instant feed parsing with AI sentiment & Gold impact evaluation</p>
+                            </div>
                         </div>
-                        <div class="imbalance-bar-container">
-                            <div class="imbalance-split-track">
-                                <div class="imbalance-fill-overhead" id="imbalance-bar-overhead" style="width: 50%;"></div>
-                                <div class="imbalance-fill-underlying" id="imbalance-bar-underlying" style="width: 50%;"></div>
-                            </div>
-                            <div class="imbalance-labels">
-                                <span class="imbalance-label-left">🔴 Overhead: <b id="overhead-pct-text">50%</b></span>
-                                <span class="imbalance-label-right">🟢 Underlying: <b id="underlying-pct-text">50%</b></span>
-                            </div>
+                        <div class="news-actions-bar">
+                            <button class="btn-refresh-feed" id="btn-force-news-sync">
+                                <span class="refresh-anim-icon">🔄</span> Fetch Latest News
+                            </button>
                         </div>
                     </div>
 
-                    <!-- 2. NEAREST CEILING (RESISTANCE MAGNET) -->
-                    <div class="content-card glass-panel liq-metric-box">
-                        <div class="liq-metric-header">
-                            <span class="liq-metric-title">NEAREST OVERHEAD CEILING</span>
-                            <span class="liq-badge-red" id="ceiling-pips-badge">+0.0 pips</span>
+                    <!-- Sentiment Summary Banner -->
+                    <div class="news-sentiment-strip">
+                        <div class="sentiment-metric">
+                            <span class="metric-label">Net News Bias</span>
+                            <span class="metric-val" id="full-news-bias">NEUTRAL</span>
                         </div>
-                        <div class="liq-metric-body">
-                            <div class="liq-level-price mono-num" id="ceiling-price-val">$----.--</div>
-                            <div class="liq-level-sub" id="ceiling-desc-val">Scanning overhead resistance...</div>
+                        <div class="sentiment-metric">
+                            <span class="metric-label">Bullish Articles</span>
+                            <span class="metric-val color-green" id="full-news-bull-count">0</span>
+                        </div>
+                        <div class="sentiment-metric">
+                            <span class="metric-label">Bearish Articles</span>
+                            <span class="metric-val color-red" id="full-news-bear-count">0</span>
+                        </div>
+                        <div class="sentiment-metric">
+                            <span class="metric-label">Critical Alerts</span>
+                            <span class="metric-val color-gold" id="full-news-crit-count">0</span>
                         </div>
                     </div>
 
-                    <!-- 3. NEAREST FLOOR (SUPPORT CUSHION) -->
-                    <div class="content-card glass-panel liq-metric-box">
-                        <div class="liq-metric-header">
-                            <span class="liq-metric-title">NEAREST UNDERLYING FLOOR</span>
-                            <span class="liq-badge-green" id="floor-pips-badge">-0.0 pips</span>
-                        </div>
-                        <div class="liq-metric-body">
-                            <div class="liq-level-price mono-num" id="floor-price-val">$----.--</div>
-                            <div class="liq-level-sub" id="floor-desc-val">Scanning underlying support...</div>
+                    <!-- News Items Stream -->
+                    <div class="news-stream-list" id="full-news-stream">
+                        <div class="loading-spinner-box">
+                            <div class="spinner"></div>
+                            <span>Scanning financial and geopolitical wire feeds...</span>
                         </div>
                     </div>
                 </div>
+            </section>
 
-                <!-- 2. MAIN INSTITUTIONAL LIQUIDITY DEPTH HEATMAP & VOLUME PROFILE -->
-                <div class="content-card glass-panel liquidity-ladder-card" style="margin-top: 16px;">
-
-                    <div class="card-header chart-header-row">
-                        <div class="header-text-group">
-                            <h2>🌊 Institutional Liquidity Depth Heatmap & Volume Profile</h2>
-                            <p class="header-sub">Horizontal order-book density, institutional accumulation pools, and fair value gaps</p>
+            <!-- ========================================================= -->
+            <!-- 3. MACRO INDICATORS & DRIVER MATRIX -->
+            <!-- ========================================================= -->
+            <section class="content-panel" id="tab-drivers">
+                <div class="macro-grid">
+                    <!-- Macro Yields & Dollar -->
+                    <div class="macro-metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">US 10-Year Yield</span>
+                            <span class="macro-badge" id="macro-us10y-bias">NEUTRAL</span>
                         </div>
-                        <div class="chart-controls-group">
-                            <div class="tf-btn-group" id="liq-filter-group">
-                                <button type="button" class="tf-btn active" data-filter="ALL">All Pools</button>
-                                <button type="button" class="tf-btn" data-filter="HIGH">High Density (>80%)</button>
-                                <button type="button" class="tf-btn" data-filter="FVG">FVG Imbalances</button>
-                                <button type="button" class="tf-btn" data-filter="ORDER_BLOCK">Order Clusters</button>
+                        <div class="metric-figure" id="macro-us10y-val">--%</div>
+                        <p class="metric-desc">Benchmark treasury rate; lower yields reduce gold holding cost.</p>
+                    </div>
+
+                    <div class="macro-metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">US Dollar Index (DXY)</span>
+                            <span class="macro-badge" id="macro-dxy-bias">NEUTRAL</span>
+                        </div>
+                        <div class="metric-figure" id="macro-dxy-val">--.--</div>
+                        <p class="metric-desc">Greenback strength; inverse historical correlation with gold.</p>
+                    </div>
+
+                    <div class="macro-metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">Real Yields (TIPS)</span>
+                            <span class="macro-badge" id="macro-tips-bias">NEUTRAL</span>
+                        </div>
+                        <div class="metric-figure" id="macro-tips-val">--%</div>
+                        <p class="metric-desc">Inflation-adjusted yield; pure opportunity cost metric for bullion.</p>
+                    </div>
+
+                    <div class="macro-metric-card">
+                        <div class="metric-top">
+                            <span class="metric-name">VIX Volatility Index</span>
+                            <span class="macro-badge" id="macro-vix-bias">NORMAL</span>
+                        </div>
+                        <div class="metric-figure" id="macro-vix-val">--.--</div>
+                        <p class="metric-desc">Equity fear index; spike indicates safe-haven bullion inflow.</p>
+                    </div>
+                </div>
+
+                <!-- Geopolitical & Institutional Flow -->
+                <div class="essentials-grid" style="margin-top: 16px;">
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🛡️</span>
+                                <h3>Geopolitical Conflict Index</h3>
                             </div>
-                            <div class="ladder-stats">
-                                <span class="stat-pill">Total Nodes: <b id="radar-total-zones" class="mono-num">0</b></span>
-                                <span class="stat-pill">Tolerance: <b id="radar-tolerance-pips" class="mono-num">1.5 pips</b></span>
+                            <span class="badge-gold" id="geo-cei-badge">CEI: --</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="geo-stat-row">
+                                <span class="geo-stat-lbl">Safe-Haven Premium:</span>
+                                <span class="geo-stat-val color-gold" id="geo-premium-val">+$0.00 / oz</span>
                             </div>
+                            <p class="geo-narrative" id="geo-summary-text">
+                                Monitoring international flashpoints, defense alerts, and safe-haven accumulation.
+                            </p>
                         </div>
                     </div>
 
-                    <!-- VISUAL HEATMAP FIGURE CONTAINER -->
-                    <div class="liquidity-chart-figure">
-                        <!-- CHART HEADER LEGEND -->
-                        <div class="chart-figure-legend">
-                            <div class="legend-item"><span class="legend-dot red"></span> Overhead Sell-Side Liquidity (Resistance / Supply)</div>
-                            <div class="legend-item"><span class="legend-dot gold"></span> Spot Equilibrium Anchor</div>
-                            <div class="legend-item"><span class="legend-dot green"></span> Underlying Buy-Side Liquidity (Support / Demand)</div>
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🏛️</span>
+                                <h3>Institutional Positioning</h3>
+                            </div>
+                            <span class="badge-neutral" id="cot-bias-badge">BALANCED</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="geo-stat-row">
+                                <span class="geo-stat-lbl">Institutional Flow:</span>
+                                <span class="geo-stat-val" id="cot-flow-val">Net Neutral</span>
+                            </div>
+                            <p class="geo-narrative" id="cot-summary-text">
+                                Tracking CFTC Commitment of Traders (COT) net non-commercial contracts and central bank reserves.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 4. LIQUIDITY RADAR & CLEAN CHART -->
+            <!-- ========================================================= -->
+            <section class="content-panel" id="tab-chart">
+                <div class="chart-panel-card">
+                    <div class="chart-top-bar">
+                        <div class="chart-title-area">
+                            <h2>XAUUSD Price & Liquidity Order-Flow Bands</h2>
+                            <span class="chart-subtitle">Synthetic multi-timeframe candles anchored to spot price & liquidity pools</span>
+                        </div>
+                        <div class="timeframe-selector">
+                            <button class="tf-btn" data-tf="M15">M15</button>
+                            <button class="tf-btn active" data-tf="H1">H1</button>
+                            <button class="tf-btn" data-tf="H4">H4</button>
+                            <button class="tf-btn" data-tf="D1">D1</button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Chart Viewport -->
+                    <div class="chart-viewport-wrapper">
+                        <canvas id="xauusd-chart-canvas"></canvas>
+                        <div class="chart-legend">
+                            <span class="legend-item"><span class="legend-dot supply"></span> Supply / Resistance Zone</span>
+                            <span class="legend-item"><span class="legend-dot demand"></span> Demand / Support Zone</span>
+                            <span class="legend-item"><span class="legend-dot price"></span> Spot Price</span>
+                        </div>
+                    </div>
+
+                    <!-- Key Liquidity Levels List -->
+                    <div class="liquidity-levels-grid">
+                        <div class="liq-col supply">
+                            <div class="liq-head">
+                                <span class="dot-red"></span>
+                                <h4>Resistance & Supply Zones (Above Price)</h4>
+                            </div>
+                            <div class="liq-items-list" id="supply-zones-list">
+                                <div class="empty-state-mini">Calculating overhead liquidity...</div>
+                            </div>
                         </div>
 
-
-                        <!-- LADDER CHART BODY -->
-                        <div class="liquidity-ladder-layout">
-                            <!-- OVERHEAD RESISTANCE & LIQUIDITY ABOVE -->
-                            <div class="ladder-section overhead-section">
-                                <div class="ladder-section-header">
-                                    <span class="ladder-tag red">🔺 Overhead Resistance Clusters (Supply Liquidity Above)</span>
-                                    <span class="ladder-count" id="count-above">0 Active</span>
-                                </div>
-                                <div class="ladder-chart-bars" id="liquidity-above-list">
-                                    <div class="zone-empty-state">Scanning overhead structure...</div>
-                                </div>
+                        <div class="liq-col demand">
+                            <div class="liq-head">
+                                <span class="dot-green"></span>
+                                <h4>Support & Demand Zones (Below Price)</h4>
                             </div>
-
-                            <!-- CURRENT SPOT PRICE BENCHMARK DIVIDER (CHART CROSSHAIR) -->
-                            <div class="current-price-benchmark" id="spot-price-crosshair">
-                                <div class="benchmark-line"></div>
-                                <div class="benchmark-badge">
-                                    <span class="pulse-beacon"></span>
-                                    <span class="benchmark-label">LIVE SPOT EQUILIBRIUM:</span>
-                                    <span class="benchmark-price mono-num">$<span id="radar-gold-price">---.--</span></span>
-                                </div>
-                                <div class="benchmark-line"></div>
-                            </div>
-
-                            <!-- UNDERLYING SUPPORT & LIQUIDITY BELOW -->
-                            <div class="ladder-section underlying-section">
-                                <div class="ladder-section-header">
-                                    <span class="ladder-tag green">🔻 Underlying Support Clusters (Demand Liquidity Below)</span>
-                                    <span class="ladder-count" id="count-below">0 Active</span>
-                                </div>
-                                <div class="ladder-chart-bars" id="liquidity-below-list">
-                                    <div class="zone-empty-state">Scanning underlying structure...</div>
-                                </div>
+                            <div class="liq-items-list" id="demand-zones-list">
+                                <div class="empty-state-mini">Calculating resting demand liquidity...</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ========================================================================= -->
-            <!-- TAB 3: TECHNICALS, MACRO, GEOPOLITICS & SCENARIO SIMULATOR -->
-            <!-- ========================================================================= -->
-            <section class="tab-pane" id="tab-technicals" role="tabpanel">
-                <div class="grid-tech-macro">
-                    <!-- 1. TECHNICAL INDICATORS CARD -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>📈 Technical Telemetry (H1 / H4 / D1)</h2>
-                                <p class="header-sub">Algorithmic indicators calculated on live market feeds</p>
-                            </div>
-                        </div>
-                        <div class="tech-grid">
-                            <div class="tech-card">
-                                <span class="tech-title">RSI (14 Period)</span>
-                                <div class="tech-value-box">
-                                    <span class="tech-val mono-num" id="tech-rsi">--.--</span>
-                                    <span class="tech-badge" id="tech-rsi-badge">NEUTRAL</span>
-                                </div>
-                                <div class="meter-track">
-                                    <div class="meter-bar" id="tech-rsi-bar" style="width: 50%;"></div>
-                                </div>
-                            </div>
-
-                            <div class="tech-card">
-                                <span class="tech-title">MACD (12, 26, 9)</span>
-                                <div class="tech-value-box">
-                                    <span class="tech-val mono-num" id="tech-macd">--.--</span>
-                                    <span class="tech-sub-val mono-num">Signal: <span id="tech-macd-sig">--.--</span></span>
-                                </div>
-                                <span class="tech-badge" id="tech-macd-badge">NEUTRAL</span>
-                            </div>
-
-                            <div class="tech-card">
-                                <span class="tech-title">Average True Range (ATR)</span>
-                                <div class="tech-value-box">
-                                    <span class="tech-val mono-num" id="tech-atr">--.--</span>
-                                    <span class="tech-badge" id="tech-atr-badge">NORMAL</span>
-                                </div>
-                            </div>
-
-                            <div class="tech-card">
-                                <span class="tech-title">Exponential Moving Averages</span>
-                                <div class="ema-stack">
-                                    <div class="ema-row">
-                                        <span>EMA 20:</span>
-                                        <b class="mono-num" id="tech-ema-20">---.--</b>
-                                    </div>
-                                    <div class="ema-row">
-                                        <span>EMA 50:</span>
-                                        <b class="mono-num" id="tech-ema-50">---.--</b>
-                                    </div>
-                                    <div class="ema-row">
-                                        <span>EMA 200:</span>
-                                        <b class="mono-num" id="tech-ema-200">---.--</b>
-                                    </div>
-                                </div>
+            <!-- ========================================================= -->
+            <!-- 5. ECONOMIC CALENDAR & CATALYSTS -->
+            <!-- ========================================================= -->
+            <section class="content-panel" id="tab-calendar">
+                <div class="news-panel-card">
+                    <div class="panel-head">
+                        <div class="panel-title-group">
+                            <span class="panel-icon">📅</span>
+                            <div>
+                                <h2>High-Impact Economic Catalysts</h2>
+                                <p class="panel-subtitle">FOMC, CPI, NFP, PCE, and Central Bank interest rate decisions</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 2. MACRO CROSS-ASSET TELEMETRY -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>🌐 Macro Cross-Asset Correlation</h2>
-                                <p class="header-sub">Currency and fixed income inputs driving bullion pricing</p>
-                            </div>
-                        </div>
-                        <div class="macro-feed-grid">
-                            <div class="macro-telemetry-box">
-                                <div class="macro-icon-box">💵</div>
-                                <div class="macro-data">
-                                    <span class="macro-label">USD Currency Index (DXY)</span>
-                                    <span class="macro-score-val mono-num" id="macro-dxy-val">104.25</span>
-                                    <span class="macro-desc" id="macro-dxy-desc">Inverse pressure on dollar-denominated gold</span>
-                                </div>
-                            </div>
-
-                            <div class="macro-telemetry-box">
-                                <div class="macro-icon-box">🏛</div>
-                                <div class="macro-data">
-                                    <span class="macro-label">US 10-Year Benchmark Yield (^TNX)</span>
-                                    <span class="macro-score-val mono-num" id="macro-10y-val">4.28%</span>
-                                    <span class="macro-desc" id="macro-10y-desc">Global sovereign risk & non-yielding bullion cost</span>
-                                </div>
-                            </div>
-
-                            <div class="macro-telemetry-box">
-                                <div class="macro-icon-box">📊</div>
-                                <div class="macro-data">
-                                    <span class="macro-label">US 2-Year Yield & Fed Expectations</span>
-                                    <span class="macro-score-val mono-num" id="macro-2y-val">4.15%</span>
-                                    <span class="macro-desc" id="macro-2y-desc">Near-term Federal Reserve rate trajectory</span>
-                                </div>
-                            </div>
-
-                            <div class="macro-telemetry-box">
-                                <div class="macro-icon-box">🛡</div>
-                                <div class="macro-data">
-                                    <span class="macro-label">TIPS / Real Rate Premium</span>
-                                    <span class="macro-score-val mono-num" id="macro-tips-val">$107.50</span>
-                                    <span class="macro-desc" id="macro-tips-desc">Inflation-adjusted yield correlation with bullion</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ROW 2: GEOPOLITICAL CEI & INSTITUTIONAL COT CARDS -->
-                <div class="grid-tech-macro" style="margin-top: 16px;">
-                    <!-- 3. GEOPOLITICAL CONFLICT ESCALATION INDEX (CEI) CARD -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>🌍 Geopolitical Conflict Escalation Index (CEI)</h2>
-                                <p class="header-sub">Quantitative flashpoint severity & safe-haven risk premium calculation</p>
-                            </div>
-                            <span class="status-pill-lg" id="cei-status-pill">ELEVATED</span>
-                        </div>
-                        <div class="cei-dashboard-body">
-                            <div class="cei-top-stats">
-                                <div class="cei-gauge-box">
-                                    <span class="cei-gauge-title">CONFLICT INDEX</span>
-                                    <span class="cei-score-digits mono-num" id="cei-score-val">--.-</span>
-                                    <span class="cei-score-scale">/ 100 Severity</span>
-                                </div>
-                                <div class="cei-premium-box">
-                                    <span class="cei-gauge-title">SAFE-HAVEN RISK PREMIUM</span>
-                                    <span class="cei-premium-digits mono-num" id="cei-premium-val">+$--.--/oz</span>
-                                    <span class="cei-premium-sub" id="cei-premium-pct">(~--% of Spot Price)</span>
-                                </div>
-                            </div>
-                            <div class="cei-flashpoints-list" id="cei-flashpoints-container">
-                                <div class="flashpoint-loading">Scanning global conflict wires...</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 4. INSTITUTIONAL COT & CENTRAL BANK TRACKER CARD -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>🏛 CFTC Commitment of Traders (COT) & Central Banks</h2>
-                                <p class="header-sub">Hedge Fund net positioning & sovereign bullion reserve flows</p>
-                            </div>
-                            <span class="status-pill-lg green" id="cot-bias-pill">ACCUMULATION</span>
-                        </div>
-                        <div class="cot-dashboard-body">
-                            <div class="cot-metrics-grid">
-                                <div class="cot-metric-tile">
-                                    <span class="cot-tile-label">Managed Money Net Longs</span>
-                                    <span class="cot-tile-val mono-num" id="cot-net-contracts">+206,400</span>
-                                    <span class="cot-tile-sub" id="cot-net-delta">+14.2k contracts (4W Δ)</span>
-                                </div>
-                                <div class="cot-metric-tile">
-                                    <span class="cot-tile-label">Long / Short Ratio</span>
-                                    <span class="cot-tile-val mono-num" id="cot-ls-ratio">5.9 : 1</span>
-                                    <span class="cot-tile-sub">74.5% Historical Percentile</span>
-                                </div>
-                                <div class="cot-metric-tile">
-                                    <span class="cot-tile-label">Central Bank Quarterly Pace</span>
-                                    <span class="cot-tile-val mono-num" id="cb-quarterly-tonnes">~295 Tonnes</span>
-                                    <span class="cot-tile-sub">Strategic De-Dollarization Bid</span>
-                                </div>
-                                <div class="cot-metric-tile">
-                                    <span class="cot-tile-label">Total Open Interest</span>
-                                    <span class="cot-tile-val mono-num" id="cot-open-interest">524,000</span>
-                                    <span class="cot-tile-sub">Deep Institutional Liquidity</span>
-                                </div>
-                            </div>
-                            <div class="cot-summary-narrative" id="cot-summary-text">
-                                Loading CFTC institutional positioning report...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ROW 3: MACRO "WHAT-IF" SCENARIO SIMULATOR CARD -->
-                <div class="content-card glass-panel simulator-card" style="margin-top: 16px;">
-                    <div class="card-header">
-                        <div class="header-text-group">
-                            <h2>⚡ Macro "What-If" Scenario Simulator</h2>
-                            <p class="header-sub">Simulate institutional gold price reactions under hypothetical rate, currency, and conflict shocks</p>
-                        </div>
-                        <button type="button" class="btn-ctrl btn-secondary" id="btn-reset-simulator">↺ Reset Baseline</button>
-                    </div>
-                    <div class="simulator-layout">
-                        <!-- LEFT INPUT CONTROLS -->
-                        <div class="sim-inputs-column">
-                            <!-- Slider 1: US 10Y Yield Shock -->
-                            <div class="sim-control-group">
-                                <div class="sim-control-header">
-                                    <label for="sim-yield-shift">US 10Y Yield Shift (bps):</label>
-                                    <span class="sim-val-display mono-num" id="sim-yield-val">0 bps</span>
-                                </div>
-                                <input type="range" id="sim-yield-shift" min="-40" max="40" step="5" value="0" class="sim-slider">
-                                <div class="sim-slider-labels"><span>-40 bps (Dovish)</span><span>0</span><span>+40 bps (Hawkish)</span></div>
-                            </div>
-
-                            <!-- Slider 2: DXY Dollar Shift -->
-                            <div class="sim-control-group">
-                                <div class="sim-control-header">
-                                    <label for="sim-dxy-shift">US Dollar Index (DXY) Shift (%):</label>
-                                    <span class="sim-val-display mono-num" id="sim-dxy-val">0.0%</span>
-                                </div>
-                                <input type="range" id="sim-dxy-shift" min="-3.0" max="3.0" step="0.2" value="0.0" class="sim-slider">
-                                <div class="sim-slider-labels"><span>-3.0% (Weak USD)</span><span>0.0%</span><span>+3.0% (Strong USD)</span></div>
-                            </div>
-
-                            <!-- Slider 3: CPI Inflation Surprise -->
-                            <div class="sim-control-group">
-                                <div class="sim-control-header">
-                                    <label for="sim-cpi-shift">CPI Inflation Surprise (% vs forecast):</label>
-                                    <span class="sim-val-display mono-num" id="sim-cpi-val">0.0%</span>
-                                </div>
-                                <input type="range" id="sim-cpi-shift" min="-0.6" max="0.6" step="0.1" value="0.0" class="sim-slider">
-                                <div class="sim-slider-labels"><span>-0.6% (Cooling)</span><span>0.0%</span><span>+0.6% (Hot CPI)</span></div>
-                            </div>
-
-                            <!-- Dropdown 4: Geopolitical Shock -->
-                            <div class="sim-control-group">
-                                <div class="sim-control-header">
-                                    <label for="sim-geo-shock">Geopolitical Shock Event:</label>
-                                </div>
-                                <select id="sim-geo-shock" class="modern-select">
-                                    <option value="NONE" selected>None (Baseline Status Quo)</option>
-                                    <option value="MODERATE">Moderate Flashpoint Skirmish (+Safe Haven)</option>
-                                    <option value="SEVERE">Acute War / Major Airspace & Strait Blockade (Extreme Surge)</option>
-                                    <option value="DE_ESCALATION">Diplomatic Ceasefire / Peace Accord Signed (-Safe Haven)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- RIGHT PROJECTED REACTION DASHBOARD -->
-                        <div class="sim-results-column">
-                            <div class="sim-result-hero glass-panel">
-                                <span class="sim-hero-eyebrow">PROJECTED GOLD TARGET PRICE</span>
-                                <div class="sim-hero-price mono-num" id="sim-projected-price">$----.--</div>
-                                <div class="sim-hero-delta mono-num" id="sim-projected-delta">+$0.00 (+0.00%)</div>
-                                <div class="sim-verdict-badge neutral" id="sim-verdict-badge">NEUTRAL CONSOLIDATION</div>
-                            </div>
-                            <div class="sim-breakdown-list">
-                                <div class="sim-breakdown-row">
-                                    <span>Yield Impact:</span>
-                                    <b class="mono-num" id="sim-bk-yield">$0.00</b>
-                                </div>
-                                <div class="sim-breakdown-row">
-                                    <span>USD Dollar Impact:</span>
-                                    <b class="mono-num" id="sim-bk-dxy">$0.00</b>
-                                </div>
-                                <div class="sim-breakdown-row">
-                                    <span>Inflation / CPI Impact:</span>
-                                    <b class="mono-num" id="sim-bk-cpi">$0.00</b>
-                                </div>
-                                <div class="sim-breakdown-row">
-                                    <span>Geopolitical Shock Impact:</span>
-                                    <b class="mono-num" id="sim-bk-geo">$0.00</b>
-                                </div>
-                            </div>
-                            <p class="sim-narrative-note" id="sim-narrative-text">Adjust sliders to simulate multi-factor shocks.</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ========================================================================= -->
-            <!-- TAB 4: CALENDAR & NEWS -->
-            <!-- ========================================================================= -->
-            <section class="tab-pane" id="tab-calendar-news" role="tabpanel">
-                <div class="grid-cal-news">
-                    <!-- ECONOMIC CALENDAR -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>📅 High-Impact USD Economic Calendar</h2>
-                                <p class="header-sub">Upcoming economic releases (Next 48 Hours)</p>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-data-table" id="calendar-table">
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Scheduled (IST)</th>
-                                        <th>Forecast</th>
-                                        <th>Previous</th>
-                                        <th>Impact</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="calendar-body">
-                                    <tr><td colspan="5" class="table-empty">Loading upcoming economic events...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- REAL-TIME NEWS INTELLIGENCE -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>📰 Real-Time News Stream</h2>
-                                <p class="header-sub">Filtered financial feeds with algorithmic sentiment tags</p>
-                            </div>
-                        </div>
-                        <div class="modern-news-feed" id="news-feed-list">
-                            <div class="news-empty-state">Loading financial news stream...</div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ========================================================================= -->
-            <!-- TAB 5: ANALYTICS & ACCURACY -->
-            <!-- ========================================================================= -->
-            <section class="tab-pane" id="tab-accuracy" role="tabpanel">
-                <div class="grid-accuracy-layout">
-                    <!-- ACCURACY SCORECARDS -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>📈 Directional Analytics & Statistical Consistency</h2>
-                                <p class="header-sub">Forward 4-Hour price trend verification vs agent bias</p>
-                            </div>
-                        </div>
-                        <div class="accuracy-metrics-ribbon">
-                            <div class="acc-tile">
-                                <span class="acc-tile-label">Evaluated Cycles</span>
-                                <span class="acc-tile-value mono-num" id="acc-total-evals">--</span>
-                                <span class="acc-tile-sub">Sample Size</span>
-                            </div>
-                            <div class="acc-tile highlight">
-                                <span class="acc-tile-label">Overall Accuracy</span>
-                                <span class="acc-tile-value mono-num" id="acc-overall-pct">--%</span>
-                                <span class="acc-tile-sub">Directional Alignment</span>
-                            </div>
-                            <div class="acc-tile">
-                                <span class="acc-tile-label">Bullish Precision</span>
-                                <span class="acc-tile-value mono-num" id="acc-bull-pct">--%</span>
-                                <span class="acc-tile-sub">Long Bias Success</span>
-                            </div>
-                            <div class="acc-tile">
-                                <span class="acc-tile-label">Bearish Precision</span>
-                                <span class="acc-tile-value mono-num" id="acc-bear-pct">--%</span>
-                                <span class="acc-tile-sub">Short Bias Success</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- HISTORICAL CYCLE LOG TABLE -->
-                    <div class="content-card glass-panel">
-                        <div class="card-header">
-                            <div class="header-text-group">
-                                <h2>🕒 Historical Intelligence Runs</h2>
-                                <p class="header-sub">Archive of past quantitative analysis cycles</p>
-                            </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-data-table" id="history-table">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp (IST)</th>
-                                        <th>Gold Spot</th>
-                                        <th>Direction</th>
-                                        <th>Score</th>
-                                        <th>Confidence</th>
-                                        <th>Provider</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="history-body">
-                                    <tr><td colspan="6" class="table-empty">Loading historical analysis runs...</td></tr>
-                                </tbody>
-                            </table>
+                    <div class="calendar-list" id="calendar-events-container">
+                        <div class="loading-spinner-box">
+                            <div class="spinner"></div>
+                            <span>Loading scheduled economic events...</span>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
-
-        <!-- FOOTER BAR -->
-        <footer class="app-footer glass-panel">
-            <div class="footer-left">
-                <span class="footer-brand">⚜ XAUUSD AI AGENT</span>
-                <span class="footer-dot">•</span>
-                <span class="footer-meta">Timezone: <b>Asia/Kolkata (IST)</b></span>
-                <span class="footer-dot">•</span>
-                <span class="footer-meta">Autonomous Loop: <b>Active</b></span>
-            </div>
-            <div class="footer-right">
-                <span class="compliance-note">⚖️ Algorithmic Market Intelligence Engine. Strictly Non-Advisory.</span>
-            </div>
-        </footer>
     </div>
 
-    <!-- MOBILE STICKY QUICK ACTION BAR (Visible only on small screens) -->
-    <div class="mobile-action-bar">
-        <button class="mobile-btn" id="m-btn-intel" data-target-tab="tab-intelligence">
-            <span>🎯</span>
-            <small>Intel</small>
-        </button>
-        <button class="mobile-btn" id="m-btn-liq" data-target-tab="tab-liquidity">
-            <span>🌊</span>
-            <small>Radar</small>
-        </button>
-        <button class="mobile-btn-center" id="m-btn-trigger">
-            <span class="refresh-anim">🔄</span>
-        </button>
-        <button class="mobile-btn" id="m-btn-tech" data-target-tab="tab-technicals">
-            <span>📊</span>
-            <small>Tech</small>
-        </button>
-        <button class="mobile-btn" id="m-btn-settings">
-            <span>⚙️</span>
-            <small>Config</small>
-        </button>
-    </div>
+    <!-- SETTINGS & CONTROLS SLIDE-OVER DRAWER -->
+    <div class="drawer-overlay" id="settings-drawer-overlay"></div>
+    <aside class="settings-drawer" id="settings-drawer">
+        <div class="drawer-header">
+            <div class="drawer-title">
+                <span>⚙️</span>
+                <h3>Agent Settings & Telegram</h3>
+            </div>
+            <button class="drawer-close" id="btn-close-drawer" aria-label="Close Settings">✕</button>
+        </div>
 
-    <!-- ========================================================================= -->
-    <!-- MODERN CONFIGURATION & CONTROL DRAWER / MODAL -->
-    <!-- ========================================================================= -->
-    <div class="modal-backdrop" id="config-modal" role="dialog" aria-modal="true" aria-hidden="true">
-        <div class="modal-dialog glass-panel">
-            <div class="modal-header-modern">
-                <div class="modal-title-box">
-                    <span class="modal-icon">⚙️</span>
-                    <div>
-                        <h2>Agent Configuration & Runtime Controls</h2>
-                        <p class="modal-sub">Real-time parameters, Telegram automation & AI models</p>
-                    </div>
+        <div class="drawer-body">
+            <!-- Telegram Alert Configuration -->
+            <div class="setting-group">
+                <h4>🔔 Telegram Real-Time Alerts</h4>
+                <p class="setting-desc">Instant phone notifications when gold direction shifts or high-impact news occurs.</p>
+                
+                <div class="form-field">
+                    <label for="cfg-tg-token">Bot Token:</label>
+                    <input type="password" id="cfg-tg-token" placeholder="123456:ABC-DEF...">
                 </div>
-                <button class="modal-close-btn" id="btn-close-modal" aria-label="Close Settings Modal">&times;</button>
+                <div class="form-field">
+                    <label for="cfg-tg-chatid">Chat ID:</label>
+                    <input type="text" id="cfg-tg-chatid" placeholder="e.g. 987654321">
+                </div>
+                <div class="form-toggle-row">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="cfg-tg-enable" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Enable Telegram Broadcasts</span>
+                </div>
+                <button class="btn-test-tg" id="btn-test-telegram">📨 Send Test Telegram Message</button>
             </div>
 
-            <div class="modal-body-scroll">
-                <!-- ACCORDION 1: TELEGRAM BOT NOTIFICATIONS -->
-                <div class="config-section">
-                    <div class="config-section-title">
-                        <span>📱 Telegram Real-Time Alerts & Shifts</span>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-tg-token">Telegram Bot Token:</label>
-                        <div class="input-with-action">
-                            <input type="password" id="cfg-tg-token" placeholder="e.g. 782910382:AAH9fklmN..." autocomplete="off">
-                            <button type="button" class="btn-toggle-eye" data-target="cfg-tg-token" title="Reveal/Hide Token">👁</button>
-                        </div>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-tg-chat">Telegram Chat ID:</label>
-                        <input type="text" id="cfg-tg-chat" placeholder="e.g. 123456789 or @channel_username">
-                    </div>
-                    <div class="config-checkbox-row">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="cfg-tg-enabled" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span class="toggle-label">Enable Real-Time Alerts (Direction Shifts, Executive Reports & Liquidity Hits)</span>
-                    </div>
-                    <div class="config-actions-row">
-                        <button type="button" class="btn-ctrl btn-secondary" id="btn-test-telegram">
-                            <span>🔔</span> Send Test Alert
-                        </button>
-                    </div>
+            <!-- AI Model Priority -->
+            <div class="setting-group">
+                <h4>🧠 AI Intelligence Provider</h4>
+                <div class="form-field">
+                    <label for="cfg-ai-provider">Priority Engine:</label>
+                    <select id="cfg-ai-provider" class="modern-select">
+                        <option value="GEMINI" selected>Gemini 2.5 Flash (Recommended)</option>
+                        <option value="OPENROUTER">OpenRouter Multi-Model</option>
+                        <option value="DETERMINISTIC">Deterministic Quant Only (No AI)</option>
+                    </select>
                 </div>
-
-                <!-- ACCORDION 2: AI REASONING & PROVIDER SETTINGS -->
-                <div class="config-section">
-                    <div class="config-section-title">
-                        <span>🧠 AI Synthesis Engine & Model Hierarchy</span>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-ai-priority">AI Priority Strategy:</label>
-                        <select id="cfg-ai-priority" class="modern-select">
-                            <option value="gemini_first">Google Gemini (Primary) ➔ OpenRouter ➔ Safe Deterministic</option>
-                            <option value="openrouter_first">OpenRouter (Primary) ➔ Gemini ➔ Safe Deterministic</option>
-                            <option value="deterministic_only">Deterministic Only (100% Offline / Zero API Keys)</option>
-                        </select>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-gemini-model">Gemini Model Tier:</label>
-                        <select id="cfg-gemini-model" class="modern-select">
-                            <option value="gemini-flash-latest" selected>Gemini Flash Latest (Verified - High Quota & Fast)</option>
-                            <option value="gemini-flash-lite-latest">Gemini Flash-Lite Latest</option>
-                            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
-                            <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
-                            <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
-                            <option value="gemini-pro-latest">Gemini Pro Latest</option>
-                        </select>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-gemini-key">Google Gemini API Key (Optional):</label>
-                        <div class="input-with-action">
-                            <input type="password" id="cfg-gemini-key" placeholder="AIzaSy... (Leave blank for Safe Fallback)">
-                            <button type="button" class="btn-toggle-eye" data-target="cfg-gemini-key" title="Reveal/Hide Key">👁</button>
-                        </div>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-openrouter-model">OpenRouter Model Preference:</label>
-                        <select id="cfg-openrouter-model" class="modern-select">
-                            <option value="openrouter/free" selected>openrouter/free (Dynamic Free Auto-Router)</option>
-                            <option value="google/gemma-4-31b-it:free">Google Gemma 4 31B (Free)</option>
-                            <option value="nvidia/nemotron-3.5-lightning:free">NVIDIA Nemotron 3.5 (Free)</option>
-                            <option value="minimax/minimax-m3:free">MiniMax M3 (Free)</option>
-                            <option value="deepseek/deepseek-r1">DeepSeek R1 (Flagship Reasoning)</option>
-                            <option value="meta-llama/llama-3.3-70b-instruct">Meta LLaMA 3.3 70B</option>
-                        </select>
-                    </div>
-                    <div class="config-field">
-                        <label for="cfg-openrouter-key">OpenRouter API Key (Optional):</label>
-                        <div class="input-with-action">
-                            <input type="password" id="cfg-openrouter-key" placeholder="sk-or-... (Leave blank for Safe Fallback)">
-                            <button type="button" class="btn-toggle-eye" data-target="cfg-openrouter-key" title="Reveal/Hide Key">👁</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ACCORDION 3: RUNTIME INTERVALS & TOLERANCES -->
-                <div class="config-section">
-                    <div class="config-section-title">
-                        <span>⏱ Runtime Parameters & Liquidity Settings</span>
-                    </div>
-                    <div class="config-grid-2">
-                        <div class="config-field">
-                            <label for="cfg-interval">Loop Interval:</label>
-                            <select id="cfg-interval" class="modern-select">
-                                <option value="60">Every 1 Minute (High Frequency)</option>
-                                <option value="180" selected>Every 3 Minutes (Optimal)</option>
-                                <option value="300">Every 5 Minutes (Standard)</option>
-                                <option value="600">Every 10 Minutes</option>
-                            </select>
-                        </div>
-                        <div class="config-field">
-                            <label for="cfg-liq-tol">Liquidity Sensitivity (Pips):</label>
-                            <input type="number" id="cfg-liq-tol" step="0.5" min="0.5" max="5.0" value="1.5">
-                        </div>
-                    </div>
-                    <div class="config-checkbox-row" style="margin-top: 14px;">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="cfg-weekend-pause" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span class="toggle-label">Pause Monitoring on Weekends (Preserves API quota when global forex markets close Friday 22:00 UTC to Sunday 22:00 UTC)</span>
-                    </div>
+                <div class="form-field">
+                    <label for="cfg-gemini-key">Gemini API Key (Optional):</label>
+                    <input type="password" id="cfg-gemini-key" placeholder="AIzaSy... (Uses system default if blank)">
                 </div>
             </div>
 
-            <div class="modal-footer-modern">
-                <div class="modal-status-text" id="modal-status-msg"></div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-ctrl btn-ghost" id="btn-cancel-modal">Cancel</button>
-                    <button type="button" class="btn-ctrl btn-primary" id="btn-save-config">💾 Save & Apply Changes</button>
+            <!-- Polling Intervals -->
+            <div class="setting-group">
+                <h4>⏱ Auto-Sync Frequency</h4>
+                <div class="form-field">
+                    <label for="cfg-sync-interval">Dashboard Refresh Interval:</label>
+                    <select id="cfg-sync-interval" class="modern-select">
+                        <option value="10" selected>Every 10 Seconds (Ultra-Fast)</option>
+                        <option value="20">Every 20 Seconds</option>
+                        <option value="60">Every 60 Seconds</option>
+                        <option value="0">Manual Refresh Only</option>
+                    </select>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="drawer-footer">
+            <div class="drawer-status" id="drawer-status-msg"></div>
+            <button class="btn-save-settings" id="btn-save-drawer-settings">💾 Save & Apply</button>
+        </div>
+    </aside>
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="toast-container"></div>
