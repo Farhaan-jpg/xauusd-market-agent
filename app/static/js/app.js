@@ -40,6 +40,17 @@ function initTabs() {
             tabPanes.forEach(pane => {
                 pane.classList.toggle("active", pane.id === targetId);
             });
+
+            if (targetId === "tab-chart") {
+                setTimeout(() => {
+                    if (cachedLiquidityData) {
+                        updateLiquidityData(cachedLiquidityData);
+                    }
+                    if (currentActiveRadarView === "view-vertical") {
+                        loadAndRenderVerticalCandles(activeCandleTimeframe);
+                    }
+                }, 30);
+            }
         });
     });
 
@@ -538,12 +549,15 @@ function initRadarSubNav() {
                 panel.classList.toggle("active", panel.id === targetView);
             });
 
+            const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
+            const curPrice = cachedLiquidityData?.current_price || liveDomPrice || 4430.00;
+
             if (targetView === "view-vertical") {
                 loadAndRenderVerticalCandles(activeCandleTimeframe);
             } else if (targetView === "view-horizontal" && cachedLiquidityData) {
-                const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
-                const curPrice = cachedLiquidityData.current_price || liveDomPrice || 4430.00;
                 renderHorizontalProfile(cachedLiquidityData.horizontal_profile, curPrice);
+            } else if (targetView === "view-matrix" && cachedLiquidityData) {
+                renderZonesMatrix(cachedLiquidityData, curPrice);
             }
         });
     });
@@ -600,9 +614,9 @@ function renderHorizontalProfile(profile, curPrice) {
 
         const isAbove = b.price > curPrice;
         const dist = Math.abs(b.price - curPrice).toFixed(1);
-        const strength = Math.round(b.strength || 65);
+        const strength = Math.round(b.strength || b.volume_intensity || 65);
         const barCls = isAbove ? "supply-bar" : "demand-bar";
-        const typeLabel = (b.type || (isAbove ? "SUPPLY POOL" : "DEMAND POOL")).replace(/_/g, " ");
+        const typeLabel = (b.type || b.zone_tag || (isAbove ? "SUPPLY WALL" : "DEMAND BLOCK")).replace(/_/g, " ");
 
         html += `
             <div class="profile-bucket-row ${isAbove ? 'overhead' : 'underlying'}" 
@@ -711,8 +725,8 @@ function drawCandlestickCanvas(data) {
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    const width = rect.width || 860;
-    const height = rect.height || 360;
+    const width = rect.width > 50 ? rect.width : (canvas.parentElement?.clientWidth || 860);
+    const height = rect.height > 50 ? rect.height : 380;
 
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -927,7 +941,56 @@ function drawCandlestickCanvas(data) {
 }
 
 /* ==============================================================================
-   4D. MAIN LIQUIDITY UPDATER
+   4D. INSTITUTIONAL ZONES MATRIX & ANALYTICS TABLE
+   ============================================================================== */
+function renderZonesMatrix(data, curPrice) {
+    const tbody = document.getElementById("zones-matrix-tbody");
+    if (!tbody || !data) return;
+
+    const allAbove = Array.isArray(data.liquidity_above) ? data.liquidity_above : [];
+    const allBelow = Array.isArray(data.liquidity_below) ? data.liquidity_below : [];
+    const combined = [...allAbove, ...allBelow];
+
+    if (combined.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">No active liquidity structures identified.</td></tr>`;
+        return;
+    }
+
+    // Sort by price descending
+    combined.sort((a, b) => b.price - a.price);
+
+    tbody.innerHTML = combined.map(z => {
+        const isAbove = z.price >= curPrice;
+        const dist = Math.abs(z.price - curPrice).toFixed(1);
+        const strength = Math.round(z.strength || 75);
+        const tf = z.timeframe || "H1";
+        const sideBadge = isAbove ? '<span style="color: #fda4af; font-weight: 700;">Overhead Supply</span>' : '<span style="color: #6ee7b7; font-weight: 700;">Resting Demand</span>';
+        const sweepProb = strength >= 85 ? '<span style="color: #fb7185; font-weight: 700;">HIGH (85%+)</span>' : strength >= 65 ? '<span style="color: #fbbf24; font-weight: 700;">MODERATE (65%)</span>' : '<span style="color: #94a3b8;">LOW</span>';
+        const tactical = isAbove ? 'Target for Buy-Side Stop Run & Reversal' : 'Support for Institutional Dip Buying';
+
+        return `
+            <tr>
+                <td style="font-weight: 700; color: #ffffff;">${escapeHtml(z.type.replace(/_/g, ' '))}</td>
+                <td style="font-family: var(--font-mono); font-weight: 700; color: #f59e0b;">$${Number(z.price).toFixed(2)} <span style="font-size: 0.68rem; color: #94a3b8;">(${isAbove ? '+' : '-'}${dist} pts)</span></td>
+                <td>${sideBadge}</td>
+                <td><span style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem;">${tf}</span></td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span style="font-family: var(--font-mono); font-weight: 700;">${strength}%</span>
+                        <div style="width: 50px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                            <div style="width: ${strength}%; height: 100%; background: ${isAbove ? '#f43f5e' : '#10b981'};"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>${sweepProb}</td>
+                <td style="color: #cbd5e1; font-size: 0.72rem;">${tactical}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+/* ==============================================================================
+   4E. MAIN LIQUIDITY UPDATER
    ============================================================================== */
 function updateLiquidityData(data) {
     if (!data) return;
@@ -954,8 +1017,48 @@ function updateLiquidityData(data) {
         imbTagEl.textContent = bidPct > askPct ? "Net Institutional Accumulation" : "Net Institutional Distribution";
     }
 
+    // Executive Order-Flow Narrative Report
+    const summaryNarrativeEl = document.getElementById("liq-executive-summary-text");
+    if (summaryNarrativeEl) {
+        summaryNarrativeEl.textContent = data.order_flow_narrative || 
+            `Order-flow structure indicates Net Institutional Accumulation (${bidPct}% Bid Depth vs ${askPct}% Ask). Active spot auction ($${curPrice.toFixed(2)}) is bounded between immediate overhead resistance and underlying demand defense.`;
+    }
+
+    // 4 Key Intelligence Metrics in Summary Header
+    const immRes = document.getElementById("liq-imm-res");
+    const resDist = document.getElementById("liq-res-dist");
+    const nearestResVal = data.immediate_resistance || (data.liquidity_above && data.liquidity_above[0]?.price) || (curPrice + 14.5);
+    if (immRes) {
+        immRes.textContent = `$${Number(nearestResVal).toFixed(2)}`;
+        if (resDist) resDist.textContent = `+${Math.abs(nearestResVal - curPrice).toFixed(1)} pts away`;
+    }
+
+    const immSup = document.getElementById("liq-imm-sup");
+    const supDist = document.getElementById("liq-sup-dist");
+    const nearestSupVal = data.immediate_support || (data.liquidity_below && data.liquidity_below[0]?.price) || (curPrice - 18.2);
+    if (immSup) {
+        immSup.textContent = `$${Number(nearestSupVal).toFixed(2)}`;
+        if (supDist) supDist.textContent = `-${Math.abs(curPrice - nearestSupVal).toFixed(1)} pts away`;
+    }
+
+    const imbVal = document.getElementById("liq-imbalance-val");
+    const imbSub = document.getElementById("liq-imbalance-sub");
+    if (imbVal) {
+        imbVal.textContent = `${bidPct}% Bid / ${askPct}% Ask`;
+        imbVal.className = `intel-val ${bidPct >= askPct ? 'color-green' : 'color-red'}`;
+        if (imbSub) imbSub.textContent = bidPct >= askPct ? "+ Net Buy Delta" : "- Net Sell Delta";
+    }
+
+    const sweepTargetEl = document.getElementById("liq-sweep-target");
+    if (sweepTargetEl) {
+        sweepTargetEl.textContent = `$${Number(nearestResVal).toFixed(2)}`;
+    }
+
     // Render Horizontal Profile
     renderHorizontalProfile(data.horizontal_profile, curPrice);
+
+    // Render Key Zones Matrix
+    renderZonesMatrix(data, curPrice);
 
     // If Vertical Radar is active, update candles or current price
     if (currentActiveRadarView === "view-vertical" && cachedCandlesData) {
@@ -976,10 +1079,10 @@ function updateLiquidityData(data) {
     if (biasPill && biasText) {
         const isBull = data.order_flow_bias !== "BEARISH_ORDER_FLOW";
         biasPill.className = `orderflow-bias-pill ${isBull ? '' : 'bearish'}`;
-        biasText.textContent = isBull ? "BULLISH ORDER-FLOW" : "BEARISH ORDER-FLOW";
+        biasText.textContent = isBull ? "BULLISH ACCUMULATION" : "BEARISH DISTRIBUTION";
     }
 
-    // Supply items (Above Price)
+    // Supply items (Above Price in Ladder)
     const supplyList = document.getElementById("ladder-supply-items");
     if (supplyList && Array.isArray(data.liquidity_above)) {
         if (data.liquidity_above.length === 0) {
@@ -1008,7 +1111,7 @@ function updateLiquidityData(data) {
         }
     }
 
-    // Demand items (Below Price)
+    // Demand items (Below Price in Ladder)
     const demandList = document.getElementById("ladder-demand-items");
     if (demandList && Array.isArray(data.liquidity_below)) {
         if (data.liquidity_below.length === 0) {
@@ -1035,27 +1138,6 @@ function updateLiquidityData(data) {
                 `;
             }).join("");
         }
-    }
-
-    // 3 Intelligence Metric Boxes
-    const immRes = document.getElementById("liq-imm-res");
-    const resDist = document.getElementById("liq-res-dist");
-    if (immRes && data.immediate_resistance) {
-        immRes.textContent = `$${Number(data.immediate_resistance).toFixed(2)}`;
-        if (resDist) resDist.textContent = `+${Math.abs(data.immediate_resistance - curPrice).toFixed(1)} pts away`;
-    }
-
-    const immSup = document.getElementById("liq-imm-sup");
-    const supDist = document.getElementById("liq-sup-dist");
-    if (immSup && data.immediate_support) {
-        immSup.textContent = `$${Number(data.immediate_support).toFixed(2)}`;
-        if (supDist) supDist.textContent = `-${Math.abs(curPrice - data.immediate_support).toFixed(1)} pts away`;
-    }
-
-    const imbVal = document.getElementById("liq-imbalance-val");
-    if (imbVal) {
-        imbVal.textContent = data.order_flow_bias === "BULLISH_ORDER_FLOW" ? `+${bidPct}% Buy Depth` : `-${askPct}% Sell Pressure`;
-        imbVal.className = `intel-val ${data.order_flow_bias === "BULLISH_ORDER_FLOW" ? 'color-green' : 'color-red'}`;
     }
 }
 

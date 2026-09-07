@@ -117,6 +117,20 @@ class LiquidityEngine:
         # Generate 24-level Horizontal Volume & Order-Flow Profile
         horizontal_profile = self.generate_horizontal_profile(price, clustered_zones)
 
+        # Generate comprehensive quantitative order-flow narrative
+        nearest_res = liquidity_above[0]["price"] if liquidity_above else (price + 15.0)
+        nearest_sup = liquidity_below[0]["price"] if liquidity_below else (price - 15.0)
+        res_dist = round(abs(nearest_res - price), 1)
+        sup_dist = round(abs(price - nearest_sup), 1)
+        imbalance_desc = f"Net Institutional Accumulation ({demand_pct}% Bid Depth vs {supply_pct}% Ask)" if demand_pct >= supply_pct else f"Net Institutional Distribution ({supply_pct}% Ask Pressure vs {demand_pct}% Bid)"
+        
+        narrative = (
+            f"Order-flow structure indicates {imbalance_desc}. "
+            f"Active spot auction (${price:.2f}) is bounded between immediate overhead supply liquidity at ${nearest_res:.2f} (+{res_dist} pts) "
+            f"and underlying institutional demand defense at ${nearest_sup:.2f} (-{sup_dist} pts). "
+            f"Elevated liquidity sweep probability observed near ${nearest_res:.2f} (Overhead BSL Stop Run Target)."
+        )
+
         return {
             "current_price": price,
             "liquidity_above": liquidity_above[:8],
@@ -126,6 +140,9 @@ class LiquidityEngine:
             "demand_depth_pct": demand_pct,
             "supply_depth_pct": supply_pct,
             "order_flow_bias": "BULLISH_ORDER_FLOW" if demand_pct >= supply_pct else "BEARISH_ORDER_FLOW",
+            "order_flow_narrative": narrative,
+            "immediate_resistance": nearest_res,
+            "immediate_support": nearest_sup,
             "active_sessions": SessionCalculator.get_active_sessions(datetime.now(timezone.utc)),
             "session_ranges": session_data,
             "aggregate_liquidity_score": round(float(avg_strength), 1),
@@ -160,16 +177,20 @@ class LiquidityEngine:
                 zone_name = closest_z.get("zone_type", "").replace("_", " ")
             else:
                 intensity = max(20.0, min(80.0, base_intensity))
-                zone_name = "Resting Limit Orders"
+                zone_name = "Supply Liquidity Wall" if is_above else "Resting Demand Block"
 
             bins.append({
                 "price": p,
                 "price_formatted": f"${p:.2f}",
                 "side": side,
+                "strength": round(intensity, 1),
                 "volume_intensity": round(intensity, 1),
+                "volume_weight": round(intensity / 50.0, 2),
                 "is_current_level": abs(p - current_price) <= (step / 2.0),
+                "type": zone_name,
                 "zone_tag": zone_name,
-                "distance_pts": round(abs(p - current_price), 1)
+                "distance_pts": round(abs(p - current_price), 1),
+                "is_above": is_above
             })
 
         return bins

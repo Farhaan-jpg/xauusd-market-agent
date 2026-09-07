@@ -12,7 +12,122 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=3.5">
+    
+    <!-- Critical Inline Styles for Radar & Charting Suite -->
+    <style>
+        .radar-view-nav {
+            display: flex !important;
+            gap: 8px !important;
+            margin: 16px 0 !important;
+            padding: 4px !important;
+            background: rgba(0, 0, 0, 0.45) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 10px !important;
+            overflow-x: auto !important;
+        }
+        .radar-sub-btn {
+            flex: 1 !important;
+            min-width: 150px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            padding: 9px 16px !important;
+            border-radius: 6px !important;
+            background: transparent !important;
+            border: 1px solid transparent !important;
+            color: #94a3b8 !important;
+            font-size: 0.78rem !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+        .radar-sub-btn:hover {
+            color: #ffffff !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+        .radar-sub-btn.active {
+            background: #1e293b !important;
+            border-color: rgba(245, 158, 11, 0.5) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.15) !important;
+        }
+        .radar-view-panel {
+            display: none !important;
+        }
+        .radar-view-panel.active {
+            display: block !important;
+        }
+        .depth-ratio-bar-wrap {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 8px !important;
+            padding: 12px 16px !important;
+            margin-bottom: 16px !important;
+        }
+        .depth-ratio-labels {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            font-size: 0.75rem !important;
+            margin-bottom: 8px !important;
+        }
+        .depth-ratio-track {
+            display: flex !important;
+            height: 8px !important;
+            border-radius: 9999px !important;
+            overflow: hidden !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+        }
+        .depth-ratio-fill.bid { background: linear-gradient(90deg, #059669, #10b981) !important; }
+        .depth-ratio-fill.ask { background: linear-gradient(90deg, #f43f5e, #e11d48) !important; }
+        .liq-summary-report-card {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-left: 3px solid #f59e0b !important;
+            border-radius: 0 8px 8px 0 !important;
+            padding: 14px 18px !important;
+            margin-bottom: 16px !important;
+        }
+        .liq-summary-report-text {
+            font-size: 0.88rem !important;
+            color: #e2e8f0 !important;
+            line-height: 1.6 !important;
+            margin-top: 6px !important;
+        }
+        .zones-matrix-table-wrap {
+            overflow-x: auto !important;
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-radius: 8px !important;
+            margin-bottom: 16px !important;
+        }
+        .zones-matrix-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 0.78rem !important;
+            text-align: left !important;
+        }
+        .zones-matrix-table th {
+            background: rgba(255, 255, 255, 0.04) !important;
+            color: #94a3b8 !important;
+            font-weight: 700 !important;
+            padding: 10px 14px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            font-family: var(--font-mono), monospace !important;
+            text-transform: uppercase !important;
+            font-size: 0.7rem !important;
+        }
+        .zones-matrix-table td {
+            padding: 10px 14px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+            color: #e2e8f0 !important;
+        }
+        .zones-matrix-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02) !important;
+        }
+    </style>
 </head>
 <body>
     <!-- Subtle Background Ambient Glows -->
@@ -391,7 +506,7 @@
                             <span class="panel-icon">🌊</span>
                             <div>
                                 <h2>Institutional Order-Flow Liquidity Radar</h2>
-                                <p class="panel-subtitle">Horizontal depth profile, vertical multi-timeframe zone radar, and DOM order-flow ladder</p>
+                                <p class="panel-subtitle">Multi-timeframe order book depth, volume-by-price concentration, Fair Value Gaps, and liquidity sweep heatmap</p>
                             </div>
                         </div>
                         <div class="head-controls-group">
@@ -402,16 +517,48 @@
                         </div>
                     </div>
 
+                    <!-- EXECUTIVE ORDER-FLOW SUMMARY & AI REPORT CARD -->
+                    <div class="liq-summary-report-card">
+                        <div class="liquidity-intel-grid">
+                            <div class="liq-intel-box">
+                                <span class="intel-lbl">Immediate Overhead Resistance Wall</span>
+                                <span class="intel-val color-red" id="liq-imm-res">$----.--</span>
+                                <span class="intel-sub" id="liq-res-dist">Analyzing...</span>
+                            </div>
+                            <div class="liq-intel-box">
+                                <span class="intel-lbl">Order-Flow Imbalance Ratio</span>
+                                <span class="intel-val color-green" id="liq-imbalance-val">Balanced</span>
+                                <span class="intel-sub" id="liq-imbalance-sub">Institutional Accumulation</span>
+                            </div>
+                            <div class="liq-intel-box">
+                                <span class="intel-lbl">Immediate Underlying Support Pool</span>
+                                <span class="intel-val color-green" id="liq-imm-sup">$----.--</span>
+                                <span class="intel-sub" id="liq-sup-dist">Analyzing...</span>
+                            </div>
+                            <div class="liq-intel-box">
+                                <span class="intel-lbl">Primary Liquidity Sweep Target</span>
+                                <span class="intel-val color-gold" id="liq-sweep-target">$----.--</span>
+                                <span class="intel-sub" id="liq-sweep-risk-val">Buy-Side Stop Run Pool</span>
+                            </div>
+                        </div>
+                        <div class="liq-summary-report-text" id="liq-executive-summary-text">
+                            Analyzing institutional resting order books, Fair Value Gaps, and multi-timeframe swing extremes...
+                        </div>
+                    </div>
+
                     <!-- RADAR VIEW SUB-NAVIGATION -->
                     <div class="radar-view-nav">
                         <button class="radar-sub-btn active" id="btn-view-horizontal" data-view="view-horizontal">
-                            <span>📊</span> Horizontal Depth Profile
+                            <span>📊</span> Volume-by-Price Profile
                         </button>
                         <button class="radar-sub-btn" id="btn-view-vertical" data-view="view-vertical">
-                            <span>📈</span> Vertical Candlestick & Zone Radar
+                            <span>📈</span> Candlestick & Zone Radar
                         </button>
                         <button class="radar-sub-btn" id="btn-view-ladder" data-view="view-ladder">
-                            <span>🪜</span> Order-Flow Depth Ladder
+                            <span>🪜</span> Order-Flow Depth Ladder (DOM)
+                        </button>
+                        <button class="radar-sub-btn" id="btn-view-matrix" data-view="view-matrix">
+                            <span>📑</span> Key Zones Matrix & Analytics
                         </button>
                     </div>
 
@@ -432,8 +579,8 @@
                         <!-- Horizontal Liquidity Volume-by-Price Canvas Container -->
                         <div class="chart-canvas-container">
                             <div class="chart-canvas-header">
-                                <span class="chart-canvas-title">Order-Flow Concentration & Liquidity Distribution ($4,350 — $4,460)</span>
-                                <span class="chart-canvas-hint">Hover bars to inspect resting limit clusters</span>
+                                <span class="chart-canvas-title">Order-Flow Concentration & Depth Profile ($4,350 — $4,460)</span>
+                                <span class="chart-canvas-hint">Inspect resting limit walls and stop-run targets</span>
                             </div>
                             <div class="horizontal-profile-wrapper" id="horizontal-profile-chart">
                                 <div class="loading-spinner-box">
@@ -507,22 +654,29 @@
                         </div>
                     </div>
 
-                    <!-- 3-COLUMN LIQUIDITY INTELLIGENCE METRICS -->
-                    <div class="liquidity-intel-grid">
-                        <div class="liq-intel-box">
-                            <span class="intel-lbl">Immediate Overhead Resistance</span>
-                            <span class="intel-val color-red" id="liq-imm-res">$----.--</span>
-                            <span class="intel-sub" id="liq-res-dist">Analyzing...</span>
-                        </div>
-                        <div class="liq-intel-box">
-                            <span class="intel-lbl">Order-Flow Imbalance Ratio</span>
-                            <span class="intel-val color-green" id="liq-imbalance-val">Balanced</span>
-                            <span class="intel-sub" id="liq-imbalance-sub">Institutional Accumulation</span>
-                        </div>
-                        <div class="liq-intel-box">
-                            <span class="intel-lbl">Immediate Underlying Support</span>
-                            <span class="intel-val color-green" id="liq-imm-sup">$----.--</span>
-                            <span class="intel-sub" id="liq-sup-dist">Analyzing...</span>
+                    <!-- VIEW 4: INSTITUTIONAL KEY ZONES MATRIX & ANALYTICS -->
+                    <div class="radar-view-panel" id="view-matrix">
+                        <div class="zones-matrix-table-wrap">
+                            <table class="zones-matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th>Structural Zone</th>
+                                        <th>Price Range</th>
+                                        <th>Side</th>
+                                        <th>Timeframe</th>
+                                        <th>Depth Strength</th>
+                                        <th>Sweep Risk</th>
+                                        <th>Tactical Reaction</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="zones-matrix-tbody">
+                                    <tr>
+                                        <td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">
+                                            Compiling institutional market structure matrix...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -656,6 +810,6 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=3.5"></script>
 </body>
 </html>
