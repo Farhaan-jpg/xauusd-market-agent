@@ -132,7 +132,11 @@ class AlertEngine:
                 executive_verdict_summary=synthesis_output.executive_verdict_summary,
                 cei_score=cei_score,
                 safe_haven_premium=safe_haven_prem,
-                cot_bias=cot_bias
+                cot_bias=cot_bias,
+                scalp_bias=current_direction.get("scalp_bias", ""),
+                day_trade_bias=current_direction.get("day_trade_bias", ""),
+                vwap=liquidity_analysis.get("vwap", 0.0) or current_direction.get("vwap_15m", 0.0),
+                market_structure=current_direction.get("market_structure", "")
             )
             sent = await self.bot.send_message(msg)
             await Repository.save_alert({

@@ -112,9 +112,14 @@ class IntelligenceOrchestrator:
             economic_events=econ_data
         )
 
-        # Merge trend and volatility info into direction_data for report display
+        # Merge trend, scalping bias, and volatility info into direction_data for report display
         direction_data["trend"] = market_analysis.get("trend", "NEUTRAL")
         direction_data["volatility"] = market_analysis.get("volatility", "NORMAL")
+        direction_data["scalp_bias"] = market_analysis.get("scalp_bias", "SCALP_RANGING")
+        direction_data["day_trade_bias"] = market_analysis.get("day_trade_bias", "DAY_TRADE_RANGING")
+        direction_data["market_structure"] = market_analysis.get("market_structure", "RANGING")
+        direction_data["vwap_15m"] = market_analysis.get("vwap_15m", current_price)
+        direction_data["vwap_5m"] = market_analysis.get("vwap_5m", current_price)
         direction_data["cei_score"] = geopolitical_analysis.get("conflict_escalation_index", 25.0)
         direction_data["safe_haven_premium_usd"] = geopolitical_analysis.get("safe_haven_premium_usd", 20.0)
         direction_data["institutional_bias"] = institutional_analysis.get("institutional_bias", "BALANCED_POSITIONING")

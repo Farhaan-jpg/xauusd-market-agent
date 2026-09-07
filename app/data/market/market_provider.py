@@ -111,43 +111,61 @@ class MarketDataProvider(BaseDataProvider):
             except Exception as e:
                 logger.debug(f"Binance PAXG ticker fetch error: {e}")
 
-        # 4. Fetch historical bars for multi-timeframe indicators (ATR, RSI, MACD, EMAs)
+        # 4. Fetch real-time multi-timeframe historical bars (5m, 15m, 1h, 1d)
         hist_1d = pd.DataFrame()
         hist_1h = pd.DataFrame()
         hist_15m = pd.DataFrame()
         hist_5m = pd.DataFrame()
 
-        for sym in ["GC=F", "GLD"]:
-            try:
-                ticker = yf.Ticker(sym)
-                h1d = ticker.history(period="5d", interval="1d")
-                if not h1d.empty:
-                    hist_1d = DataValidator.validate_ohlc_df(h1d, timeframe="1d")
+        # Primary: High-speed real-time Binance PAXG klines (0 delay, 24/7 live spot gold bars)
+        try:
+            with httpx.Client(timeout=3.5) as client:
+                hist_5m = self._fetch_binance_klines(client, interval="5m", limit=100)
+                hist_15m = self._fetch_binance_klines(client, interval="15m", limit=100)
+                hist_1h = self._fetch_binance_klines(client, interval="1h", limit=100)
+                hist_1d = self._fetch_binance_klines(client, interval="1d", limit=30)
+                
+                # If spot price wasn't obtained from TradingView, use latest 5m/1m close
+                if spot_price is None and not hist_5m.empty:
+                    spot_price = float(hist_5m["close"].iloc[-1])
+        except Exception as e:
+            logger.debug(f"Binance real-time klines fetch error: {e}")
+
+        # Fallback to yfinance if any timeframe is missing
+        if hist_1d.empty or hist_1h.empty or hist_15m.empty or hist_5m.empty:
+            for sym in ["GC=F", "GLD"]:
+                try:
+                    ticker = yf.Ticker(sym)
+                    if hist_1d.empty:
+                        h1d = ticker.history(period="5d", interval="1d")
+                        if not h1d.empty:
+                            hist_1d = DataValidator.validate_ohlc_df(h1d, timeframe="1d")
                     
-                    # If spot price wasn't fetched yet, use ticker close
-                    if spot_price is None:
+                    if spot_price is None and not hist_1d.empty:
                         spot_price = float(hist_1d["close"].iloc[-1])
                         prev_c = float(hist_1d["close"].iloc[-2]) if len(hist_1d) >= 2 else spot_price
                         change_24h = round(((spot_price - prev_c) / prev_c) * 100.0, 2)
                         high_24h = float(hist_1d["high"].iloc[-1])
                         low_24h = float(hist_1d["low"].iloc[-1])
 
-                    # Fetch sub-daily timeframes
-                    h1h = ticker.history(period="1mo", interval="1h")
-                    if not h1h.empty:
-                        hist_1h = DataValidator.validate_ohlc_df(h1h, timeframe="1h")
+                    if hist_1h.empty:
+                        h1h = ticker.history(period="1mo", interval="1h")
+                        if not h1h.empty:
+                            hist_1h = DataValidator.validate_ohlc_df(h1h, timeframe="1h")
 
-                    h15m = ticker.history(period="5d", interval="15m")
-                    if not h15m.empty:
-                        hist_15m = DataValidator.validate_ohlc_df(h15m, timeframe="15m")
+                    if hist_15m.empty:
+                        h15m = ticker.history(period="5d", interval="15m")
+                        if not h15m.empty:
+                            hist_15m = DataValidator.validate_ohlc_df(h15m, timeframe="15m")
 
-                    h5m = ticker.history(period="1d", interval="5m")
-                    if not h5m.empty:
-                        hist_5m = DataValidator.validate_ohlc_df(h5m, timeframe="5m")
+                    if hist_5m.empty:
+                        h5m = ticker.history(period="1d", interval="5m")
+                        if not h5m.empty:
+                            hist_5m = DataValidator.validate_ohlc_df(h5m, timeframe="5m")
                     break
-            except Exception as e:
-                logger.debug(f"History fetch error for {sym}: {e}")
-                continue
+                except Exception as e:
+                    logger.debug(f"History fallback fetch error for {sym}: {e}")
+                    continue
 
         if spot_price is None or spot_price <= 0:
             spot_price = 4430.00
@@ -158,7 +176,7 @@ class MarketDataProvider(BaseDataProvider):
             low_24h = spot_price - vol_offset
 
         return {
-            "symbol": "XAUUSD (OANDA)",
+            "symbol": "XAUUSD (OANDA / SPOT)",
             "price": spot_price,
             "change_24h": change_24h,
             "high_24h": high_24h,
@@ -172,5 +190,32 @@ class MarketDataProvider(BaseDataProvider):
                 "15m": hist_15m,
                 "5m": hist_5m
             },
-            "data_quality": "GOOD"
+            "data_quality": "GOOD" if not hist_5m.empty else "LIMITED"
         }
+
+    def _fetch_binance_klines(self, client: httpx.Client, interval: str = "5m", limit: int = 100) -> pd.DataFrame:
+        """Fetches real-time OHLCV klines from Binance PAXG/USDT (zero-delay spot gold)."""
+        url = f"https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval={interval}&limit={limit}"
+        res = client.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        if res.status_code != 200:
+            return pd.DataFrame()
+        
+        raw_data = res.json()
+        if not raw_data or not isinstance(raw_data, list):
+            return pd.DataFrame()
+            
+        records = []
+        for bar in raw_data:
+            # bar: [Open time, Open, High, Low, Close, Volume, Close time, ...]
+            records.append({
+                "timestamp": pd.to_datetime(bar[0], unit="ms", utc=True),
+                "open": float(bar[1]),
+                "high": float(bar[2]),
+                "low": float(bar[3]),
+                "close": float(bar[4]),
+                "volume": float(bar[5])
+            })
+            
+        df = pd.DataFrame(records)
+        df.set_index("timestamp", inplace=True)
+        return DataValidator.validate_ohlc_df(df, timeframe=interval)

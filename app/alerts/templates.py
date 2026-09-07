@@ -46,7 +46,11 @@ class AlertTemplates:
         executive_verdict_summary: str = "",
         cei_score: float = 25.0,
         safe_haven_premium: float = 20.0,
-        cot_bias: str = "BALANCED_POSITIONING"
+        cot_bias: str = "BALANCED_POSITIONING",
+        scalp_bias: str = "",
+        day_trade_bias: str = "",
+        vwap: float = 0.0,
+        market_structure: str = ""
     ) -> str:
         esc = TelegramBot.escape
         dir_emoji = "🟢" if "BULLISH" in direction else "🔴" if "BEARISH" in direction else "⚪"
@@ -83,6 +87,15 @@ class AlertTemplates:
 
         summary_text = executive_verdict_summary or macro_summary
 
+        scalp_section = ""
+        if scalp_bias or day_trade_bias:
+            vwap_str = f" | VWAP: <b>${vwap:.2f}</b>" if vwap > 0 else ""
+            scalp_section = f"""━━━━━━━━━━━━━━━━━━━━
+<b>⚡ SCALPING & DAY TRADING BIAS:</b>
+• Scalp Bias (5M): <b>{esc(scalp_bias or 'MOMENTUM_ALIGNMENT')}</b>
+• Day Trade Bias (15M): <b>{esc(day_trade_bias or 'STRUCTURE_FOLLOW')}</b>{vwap_str}
+• Market Structure: <b>{esc(market_structure or 'RANGING')}</b>"""
+
         msg = f"""<b>🏛 XAUUSD MARKET INTELLIGENCE REPORT</b>
 📅 <i>{get_formatted_time()}</i>
 ━━━━━━━━━━━━━━━━━━━━
@@ -93,16 +106,15 @@ class AlertTemplates:
 ━━━━━━━━━━━━━━━━━━━━
 🎯 <b>FINAL MARKET VERDICT:</b>
 {verdict_badge}
-
+{scalp_section}
+━━━━━━━━━━━━━━━━━━━━
 📝 <b>EXECUTIVE ANALYSIS:</b>
 {esc(summary_text)}
 ━━━━━━━━━━━━━━━━━━━━
 <b>📈 EVIDENCE MATRIX & GEOPOLITICS:</b>
-• Macro Score: <b>{macro_score:+.1f}</b>
-• USD Score: <b>{usd_score:+.1f}</b>
-• Yield Score: <b>{yield_score:+.1f}</b>
-• News Sentiment: <b>{news_score:+.1f}</b>
-• Technical Score: <b>{tech_score:+.1f}</b> ({esc(trend.replace('_', ' '))})
+• Technical Score (50%): <b>{tech_score:+.1f}</b> ({esc(trend.replace('_', ' '))})
+• Real-Time News (20%): <b>{news_score:+.1f}</b>
+• Macro Score (15%): <b>{macro_score:+.1f}</b> (USD: {usd_score:+.1f}, Yields: {yield_score:+.1f})
 • 🌍 Conflict Index (CEI): <b>{cei_score:.1f}/100</b> (+${safe_haven_premium:.2f}/oz Safe-Haven)
 • 🏛 Institutional COT: <b>{esc(cot_bias.replace('_', ' '))}</b>
 • Volatility: <b>{esc(volatility.replace('_', ' '))}</b>
@@ -123,7 +135,7 @@ class AlertTemplates:
 ━━━━━━━━━━━━━━━━━━━━
 <b>📅 UPCOMING HIGH-IMPACT EVENTS:</b>{events_str}
 ━━━━━━━━━━━━━━━━━━━━
-<i>ℹ️ Non-directional market intelligence. Not financial or trading advice.</i>"""
+<i>ℹ️ Real-time scalping & day-trading market intelligence. Not financial advice.</i>"""
         return msg.strip()
 
     @staticmethod

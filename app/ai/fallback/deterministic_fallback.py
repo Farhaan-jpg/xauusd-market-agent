@@ -56,16 +56,32 @@ class DeterministicFallbackProvider(BaseAIProvider):
         else:
             news_summary = "No major market-moving news headlines detected in the current monitoring window."
 
+        # Scalping and Day Trading Context
+        scalp_bias = direction_data.get("scalp_bias") or market.get("scalp_bias", "SCALP_RANGING")
+        day_trade_bias = direction_data.get("day_trade_bias") or market.get("day_trade_bias", "DAY_TRADE_RANGING")
+        market_structure = direction_data.get("market_structure") or market.get("market_structure", "RANGING")
+
         # Determine simplified clean final verdict (BULLISH, BEARISH, NEUTRAL)
         if "BULLISH" in direction:
             final_verdict = "BULLISH"
-            verdict_desc = f"Overall market evidence indicates a BULLISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Supportive factors across macro/yields and technical momentum favor upward expansion."
+            verdict_desc = (
+                f"Overall market evidence indicates a BULLISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). "
+                f"Scalping bias is {scalp_bias.replace('_', ' ')}, with 15M day-trade structure showing {day_trade_bias.replace('_', ' ')} ({market_structure.replace('_', ' ')}). "
+                f"Supportive factors across technical momentum and buyers defending liquidity favor upward expansion."
+            )
         elif "BEARISH" in direction:
             final_verdict = "BEARISH"
-            verdict_desc = f"Overall market evidence indicates a BEARISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Prevailing headwinds across USD strength, yields, and resistance structure constrain upward price potential."
+            verdict_desc = (
+                f"Overall market evidence indicates a BEARISH posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). "
+                f"Scalping bias is {scalp_bias.replace('_', ' ')}, with 15M day-trade structure showing {day_trade_bias.replace('_', ' ')} ({market_structure.replace('_', ' ')}). "
+                f"Selling pressure below VWAP and overhead supply resistance constrain price upside."
+            )
         else:
             final_verdict = "NEUTRAL"
-            verdict_desc = f"Overall market evidence indicates a NEUTRAL / CONSOLIDATION posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). Drivers are balanced with competing forces across macroeconomic signals and technical ranges."
+            verdict_desc = (
+                f"Overall market evidence indicates a NEUTRAL / CONSOLIDATION posture (Score: {score:+.1f}, Confidence: {confidence:.0f}%). "
+                f"Scalp bias is {scalp_bias.replace('_', ' ')} with balanced conditions across intraday ranges and macro signals."
+            )
 
         # Risk factors
         risk_factors = (
