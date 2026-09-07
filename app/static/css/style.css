@@ -2053,3 +2053,184 @@ body {
         max-width: 100%;
     }
 }
+
+/* ==============================================================================
+   ULTIMATE REAL-TIME INTELLIGENCE & DUAL-MODE COMPONENT STYLES
+   ============================================================================== */
+
+.mode-master-switcher {
+    display: flex;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 9999px;
+    padding: 3px;
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+}
+
+.mode-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-switch-btn:hover {
+    color: #ffffff;
+}
+
+.mode-switch-btn.active.scalp {
+    background: linear-gradient(135deg, #0284c7, #0369a1);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(14, 165, 233, 0.4);
+}
+
+.mode-switch-btn.active.daytrade {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.correlations-matrix-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.corr-item-card {
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 14px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.corr-item-card:hover {
+    border-color: rgba(245, 158, 11, 0.3);
+    transform: translateY(-2px);
+}
+
+.corr-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.corr-item-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.corr-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.corr-badge.bullish {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.corr-badge.bearish {
+    background: rgba(244, 63, 94, 0.15);
+    color: #fb7185;
+    border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.corr-badge.neutral {
+    background: rgba(148, 163, 184, 0.15);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.corr-item-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+}
+
+.corr-item-val {
+    font-family: var(--font-mono), monospace;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.corr-item-change {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.corr-item-desc {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
+.btn-audio-brief {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #a5b4fc;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-audio-brief:hover {
+    background: rgba(99, 102, 241, 0.25);
+    color: #ffffff;
+    border-color: #818cf8;
+}
+
+.btn-audio-brief.speaking {
+    background: rgba(244, 63, 94, 0.2);
+    border-color: #f43f5e;
+    color: #fca5a5;
+    animation: pulse 1.5s infinite;
+}
+
+.flashpoint-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.flashpoint-pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+}
+
+.flashpoint-pill.high {
+    border-color: rgba(244, 63, 94, 0.4);
+    color: #fda4af;
+    background: rgba(244, 63, 94, 0.1);
+}
+

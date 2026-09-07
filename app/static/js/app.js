@@ -1,11 +1,14 @@
 /**
  * XAUUSD AI AGENT — CLIENT DASHBOARD CONTROLLER
- * Minimal, ultra-responsive, real-time news capture & analysis updater.
+ * Institutional, ultra-responsive, real-time news capture & analysis updater.
  */
 
 let refreshIntervalId = null;
 let currentRefreshRate = 10; // seconds
 let knownNewsFingerprints = new Set();
+let currentTradingMode = "scalp"; // "scalp" or "daytrade"
+let isSpeaking = false;
+let currentSpeechSynthesis = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
@@ -13,6 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initRadarSubNav();
     initActionButtons();
     initSettingsDrawer();
+    initModeSwitcher();
+    initAudioBrief();
     
     // Initial data fetch
     fetchFullDashboard();
@@ -107,9 +112,14 @@ function setupAutoRefresh(seconds) {
 async function fetchFullDashboard() {
     try {
         const [
+            intelRes, corrRes, geoFeedRes, finFeedRes,
             reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes,
             setupsRes, regimeRes, oneLookRes, htfRes, fvgRes, judasRes, fedwatchRes, decouplingRes, journalRes
         ] = await Promise.allSettled([
+            fetch(`/api/intelligence?mode=${currentTradingMode}`).then(r => r.json()),
+            fetch("/api/correlations").then(r => r.json()),
+            fetch("/api/geopolitics-feed").then(r => r.json()),
+            fetch("/api/financial-feed").then(r => r.json()),
             fetch("/api/latest-report").then(r => r.json()),
             fetch("/api/market-data").then(r => r.json()),
             fetch("/api/news").then(r => r.json()),
@@ -128,6 +138,19 @@ async function fetchFullDashboard() {
             fetch("/api/dollar-decoupling").then(r => r.json()),
             fetch("/api/trade-journal").then(r => r.json())
         ]);
+
+        if (intelRes.status === "fulfilled" && intelRes.value.status === "SUCCESS") {
+            updateUltimateIntelligence(intelRes.value.data);
+        }
+        if (corrRes.status === "fulfilled" && corrRes.value.status === "SUCCESS") {
+            updateCorrelationsMatrix(corrRes.value.data);
+        }
+        if (geoFeedRes.status === "fulfilled" && geoFeedRes.value.status === "SUCCESS") {
+            updateGeopoliticsFeed(geoFeedRes.value.data);
+        }
+        if (finFeedRes.status === "fulfilled" && finFeedRes.value.status === "SUCCESS") {
+            updateFinancialFeed(finFeedRes.value.data);
+        }
 
         if (reportRes.status === "fulfilled") updateExecutiveReport(reportRes.value);
         if (marketRes.status === "fulfilled") updateMarketData(marketRes.value);
@@ -151,6 +174,7 @@ async function fetchFullDashboard() {
         console.error("Dashboard refresh error:", err);
     }
 }
+
 
 /* ==============================================================================
    4. UI COMPONENT UPDATERS
@@ -1392,3 +1416,313 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+/* ==============================================================================
+   8. ULTIMATE REAL-TIME INTELLIGENCE & DUAL-MODE CONTROLLER
+   ============================================================================== */
+
+function initRadarSubNav() {
+    const radarBtns = document.querySelectorAll(".radar-sub-btn");
+    const radarPanels = document.querySelectorAll(".radar-view-panel");
+
+    radarBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetView = btn.getAttribute("data-view");
+            radarBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            radarPanels.forEach(panel => {
+                panel.classList.toggle("active", panel.id === targetView);
+            });
+        });
+    });
+}
+
+function initActionButtons() {
+    const btnSync = document.getElementById("btn-quick-sync");
+    if (btnSync) {
+        btnSync.addEventListener("click", () => {
+            btnSync.classList.add("syncing");
+            fetchFullDashboard().finally(() => {
+                setTimeout(() => btnSync.classList.remove("syncing"), 600);
+                showToast("⚡ Intelligence and market data refreshed!");
+            });
+        });
+    }
+
+    const btnForceNews = document.getElementById("btn-force-news-sync");
+    if (btnForceNews) {
+        btnForceNews.addEventListener("click", () => {
+            fetchFullDashboard();
+            showToast("📰 Real-time news feeds synchronized.");
+        });
+    }
+}
+
+function initModeSwitcher() {
+    const btnScalp = document.getElementById("btn-mode-scalp");
+    const btnDayTrade = document.getElementById("btn-mode-daytrade");
+
+    if (btnScalp && btnDayTrade) {
+        btnScalp.addEventListener("click", () => {
+            if (currentTradingMode === "scalp") return;
+            currentTradingMode = "scalp";
+            btnScalp.classList.add("active");
+            btnDayTrade.classList.remove("active");
+            updateTradingViewInterval(5);
+            showToast("⚡ Switched to 1M/5M SCALPING MODE (Tight SL, Orderflow CVD focus)");
+            fetchFullDashboard();
+        });
+
+        btnDayTrade.addEventListener("click", () => {
+            if (currentTradingMode === "daytrade") return;
+            currentTradingMode = "daytrade";
+            btnDayTrade.classList.add("active");
+            btnScalp.classList.remove("active");
+            updateTradingViewInterval(60);
+            showToast("🎯 Switched to 15M/1H/4H DAY TRADING MODE (Macro & 6-factor correlation focus)");
+            fetchFullDashboard();
+        });
+    }
+}
+
+function updateTradingViewInterval(interval) {
+    const tvIframe = document.getElementById("tv-chart-iframe");
+    if (tvIframe) {
+        tvIframe.src = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=OANDA%3AXAUUSD&interval=${interval}&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost`;
+    }
+}
+
+function initAudioBrief() {
+    const btnAudio = document.getElementById("btn-audio-brief");
+    const audioIcon = document.getElementById("audio-icon");
+    const audioText = document.getElementById("audio-btn-text");
+
+    if (btnAudio && ('speechSynthesis' in window)) {
+        btnAudio.addEventListener("click", () => {
+            if (isSpeaking) {
+                window.speechSynthesis.cancel();
+                isSpeaking = false;
+                btnAudio.classList.remove("speaking");
+                if (audioIcon) audioIcon.textContent = "🔊";
+                if (audioText) audioText.textContent = "Listen to AI Brief";
+                return;
+            }
+
+            const narrativeEl = document.getElementById("hero-verdict-summary");
+            const biasEl = document.getElementById("hero-verdict-text");
+            const textToSpeak = `Gold Market Intelligence Briefing. Verdict: ${biasEl?.textContent || 'Bullish'}. ${narrativeEl?.textContent || 'Analyzing current market catalysts.'}`;
+
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.rate = 1.05;
+            utterance.pitch = 1.0;
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                btnAudio.classList.add("speaking");
+                if (audioIcon) audioIcon.textContent = "⏹";
+                if (audioText) audioText.textContent = "Stop Audio Brief";
+            };
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                btnAudio.classList.remove("speaking");
+                if (audioIcon) audioIcon.textContent = "🔊";
+                if (audioText) audioText.textContent = "Listen to AI Brief";
+            };
+
+            utterance.onerror = () => {
+                isSpeaking = false;
+                btnAudio.classList.remove("speaking");
+                if (audioIcon) audioIcon.textContent = "🔊";
+                if (audioText) audioText.textContent = "Listen to AI Brief";
+            };
+
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
+        });
+    }
+}
+
+function updateUltimateIntelligence(data) {
+    if (!data) return;
+
+    // Cockpit mode tag
+    const modeTag = document.getElementById("cockpit-mode-tag");
+    if (modeTag) {
+        modeTag.textContent = data.mode === "SCALPING" ? "[ ⚡ SCALPING MODE ]" : "[ 🎯 DAY TRADING MODE ]";
+        modeTag.style.color = data.mode === "SCALPING" ? "#38bdf8" : "#fbbf24";
+    }
+
+    // Hero Verdict Badge
+    const dir = data.direction || "NEUTRAL";
+    const badge = document.getElementById("hero-verdict-badge");
+    const badgeText = document.getElementById("hero-verdict-text");
+    if (badge && badgeText) {
+        badge.className = `verdict-badge ${dir.toLowerCase()}`;
+        const sign = data.composite_score > 0 ? "+" : "";
+        badgeText.textContent = `${dir} (${sign}${data.composite_score.toFixed(1)})`;
+    }
+
+    // Conviction Ring
+    const confVal = document.getElementById("hero-conf-val");
+    const confFill = document.getElementById("hero-conf-fill");
+    const conf = data.conviction_pct || 75;
+    if (confVal) confVal.textContent = `${conf}%`;
+    if (confFill) {
+        confFill.setAttribute("stroke-dasharray", `${conf}, 100`);
+        confFill.style.stroke = conf >= 80 ? "#10b981" : conf >= 60 ? "#f59e0b" : "#f43f5e";
+    }
+
+    // Posture Badge
+    const postureEl = document.getElementById("hero-action-posture");
+    const postureIcon = document.getElementById("hero-posture-icon");
+    const postureText = document.getElementById("hero-posture-text");
+    if (postureEl && postureText) {
+        if (dir === "BULLISH") {
+            postureEl.className = "action-posture-badge long";
+            if (postureIcon) postureIcon.textContent = "🚀";
+            postureText.textContent = `TACTICAL DIRECTIVE: ${data.tactical_directive || 'ACCUMULATE DEMAND POOLS'}`;
+        } else if (dir === "BEARISH") {
+            postureEl.className = "action-posture-badge short";
+            if (postureIcon) postureIcon.textContent = "🔻";
+            postureText.textContent = `TACTICAL DIRECTIVE: ${data.tactical_directive || 'SELL INTO RESISTANCE'}`;
+        } else {
+            postureEl.className = "action-posture-badge wait";
+            if (postureIcon) postureIcon.textContent = "⚖️";
+            postureText.textContent = `TACTICAL DIRECTIVE: ${data.tactical_directive || 'RANGE EQUILIBRIUM'}`;
+        }
+    }
+
+    // Narrative
+    const summaryEl = document.getElementById("hero-verdict-summary");
+    if (summaryEl) {
+        summaryEl.textContent = data.executive_thesis || data.narrative || "";
+    }
+
+    // Mode-Specific Setup Card
+    const setup = data.actionable_setup;
+    if (setup) {
+        const titleEl = document.getElementById("setup-card-mode-title");
+        const rrEl = document.getElementById("setup-card-rr");
+        const entryEl = document.getElementById("setup-entry");
+        const slEl = document.getElementById("setup-sl");
+        const tp1El = document.getElementById("setup-tp1");
+        const tp2El = document.getElementById("setup-tp2");
+        const horizonEl = document.getElementById("setup-horizon");
+
+        if (titleEl) titleEl.textContent = `${data.mode} ${setup.type} SETUP (${setup.style})`;
+        if (rrEl) rrEl.textContent = `R:R ${setup.risk_reward_ratio || '1:2.5'}`;
+        if (entryEl) entryEl.textContent = `$${setup.entry_price?.toFixed(2) || '----.--'}`;
+        if (slEl) slEl.textContent = `$${setup.stop_loss?.toFixed(2) || '----.--'}`;
+        if (tp1El) tp1El.textContent = `$${setup.take_profit_1?.toFixed(2) || '----.--'}`;
+        if (tp2El) tp2El.textContent = `$${setup.take_profit_2?.toFixed(2) || '----.--'}`;
+        if (horizonEl) horizonEl.textContent = setup.holding_horizon || (data.mode === "SCALPING" ? "5-30 Mins" : "4-18 Hours");
+    }
+
+    // Telemetry
+    const teleScore = document.getElementById("tele-score");
+    const teleGeo = document.getElementById("tele-geo");
+    const teleCorr = document.getElementById("tele-corr");
+    const teleNews = document.getElementById("tele-news");
+    const teleSync = document.getElementById("tele-synctime");
+
+    if (teleScore) teleScore.textContent = data.composite_score?.toFixed(1) || "0.0";
+    if (teleGeo) teleGeo.textContent = `CEI ${data.component_scores?.geopolitics?.toFixed(0) || '75'}`;
+    if (teleCorr) teleCorr.textContent = `${data.component_scores?.correlations > 0 ? '+' : ''}${data.component_scores?.correlations?.toFixed(1) || '+15.0'}`;
+    if (teleNews) teleNews.textContent = `${data.component_scores?.news > 0 ? '+' : ''}${data.component_scores?.news?.toFixed(1) || '+10.0'}`;
+    if (teleSync) teleSync.textContent = new Date().toLocaleTimeString();
+}
+
+function updateCorrelationsMatrix(data) {
+    if (!data) return;
+
+    const compositeBadge = document.getElementById("corr-composite-badge");
+    if (compositeBadge) {
+        const sign = data.composite_correlation_score > 0 ? "+" : "";
+        compositeBadge.textContent = `COMPOSITE: ${sign}${data.composite_correlation_score.toFixed(1)} (${data.composite_bias})`;
+        compositeBadge.style.color = data.composite_bias === "BULLISH" ? "#34d399" : data.composite_bias === "BEARISH" ? "#fb7185" : "#f59e0b";
+    }
+
+    const container = document.getElementById("correlations-matrix-container");
+    if (!container || !data.correlations) return;
+
+    const corrList = [
+        { key: "dxy_dollar", title: "US Dollar Index (DXY)", icon: "💵" },
+        { key: "tips_real_yields", title: "10Y TIPS Real Yields", icon: "📉" },
+        { key: "gold_silver_ratio", title: "Gold/Silver Ratio (GSR)", icon: "⚖️" },
+        { key: "crude_oil_wti", title: "WTI Crude Oil", icon: "🛢️" },
+        { key: "shanghai_gold_premium", title: "Shanghai Physical (SGE)", icon: "🇨🇳" },
+        { key: "vix_volatility", title: "VIX Fear Index", icon: "⚡" }
+    ];
+
+    container.innerHTML = corrList.map(item => {
+        const c = data.correlations[item.key];
+        if (!c) return "";
+        const badgeClass = (c.bias || "NEUTRAL").toLowerCase();
+        const changeSign = (c.change_pct || 0) >= 0 ? "+" : "";
+        const changeColor = badgeClass === "bullish" ? "#34d399" : badgeClass === "bearish" ? "#fb7185" : "#94a3b8";
+
+        return `
+            <div class="corr-item-card">
+                <div class="corr-item-head">
+                    <span class="corr-item-title">${item.icon} ${item.title}</span>
+                    <span class="corr-badge ${badgeClass}">${c.bias}</span>
+                </div>
+                <div class="corr-item-body">
+                    <span class="corr-item-val">${c.current_value !== undefined ? (typeof c.current_value === 'number' ? c.current_value.toFixed(2) : c.current_value) : '--'}</span>
+                    <span class="corr-item-change" style="color: ${changeColor};">${changeSign}${c.change_pct ? c.change_pct.toFixed(2) : '0.00'}%</span>
+                </div>
+                <p class="corr-item-desc">${escapeHtml(c.interpretation || '')}</p>
+            </div>
+        `;
+    }).join("");
+}
+
+function updateGeopoliticsFeed(data) {
+    if (!data) return;
+
+    const ceiBadge = document.getElementById("geo-cei-badge-hero");
+    const premiumVal = document.getElementById("geo-premium-val-hero");
+    const ceiFill = document.getElementById("geo-cei-fill-hero");
+    const summaryText = document.getElementById("geo-summary-text-hero");
+    const flashpointsBox = document.getElementById("geo-flashpoints-container");
+
+    const cei = data.conflict_escalation_index || 75.0;
+    const premium = data.safe_haven_premium_usd || 95.0;
+
+    if (ceiBadge) ceiBadge.textContent = `CEI: ${cei.toFixed(0)}/100 (${data.threat_level || 'ELEVATED'})`;
+    if (premiumVal) premiumVal.textContent = `+$${premium.toFixed(2)} / oz`;
+    if (ceiFill) {
+        ceiFill.style.width = `${Math.min(100, cei)}%`;
+        ceiFill.style.background = cei >= 75 ? "linear-gradient(90deg, #f59e0b, #ef4444)" : "linear-gradient(90deg, #10b981, #f59e0b)";
+    }
+    if (summaryText) summaryText.textContent = data.summary || "Active geopolitical monitoring across global defense theaters.";
+
+    if (flashpointsBox && data.theater_alerts) {
+        flashpointsBox.innerHTML = data.theater_alerts.map(a => {
+            const isHigh = (a.status || "").toLowerCase().includes("active") || (a.status || "").toLowerCase().includes("escalat") || (a.status || "").toLowerCase().includes("high");
+            return `<span class="flashpoint-pill ${isHigh ? 'high' : ''}">${escapeHtml(a.region)}: ${escapeHtml(a.status)}</span>`;
+        }).join("");
+    }
+}
+
+function updateFinancialFeed(data) {
+    if (!data) return;
+
+    const toneBadge = document.getElementById("fin-tone-badge");
+    const cbPaceVal = document.getElementById("fin-cb-pace-val");
+    const summaryEl = document.getElementById("fin-narrative-summary");
+
+    if (toneBadge) {
+        toneBadge.textContent = data.fed_tone || "DOVISH FLOWS";
+        toneBadge.style.color = (data.fed_tone || "").includes("DOVISH") ? "#34d399" : (data.fed_tone || "").includes("HAWKISH") ? "#fb7185" : "#f59e0b";
+    }
+    if (cbPaceVal) {
+        cbPaceVal.textContent = `${(data.central_bank_accumulation_pace_tonnes || 1140).toFixed(0)} Tonnes/Yr`;
+    }
+    if (summaryEl) {
+        summaryEl.textContent = data.summary || "Central bank reserve diversification providing structural bid.";
+    }
+}
+

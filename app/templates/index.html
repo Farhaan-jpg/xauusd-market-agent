@@ -147,6 +147,16 @@
                     </div>
                 </div>
 
+                <!-- Master Dual-Mode Switcher: Scalping vs Day Trading -->
+                <div class="mode-master-switcher" id="master-mode-switcher">
+                    <button class="mode-switch-btn active scalp" id="btn-mode-scalp" title="Switch to 1M/5M Scalping Mode (Tight 4pt SL, 8-12pt TP)">
+                        <span>⚡</span> SCALPING
+                    </button>
+                    <button class="mode-switch-btn daytrade" id="btn-mode-daytrade" title="Switch to 15M/1H/4H Day Trading Mode (12pt SL, 25-35pt TP)">
+                        <span>🎯</span> DAY TRADING
+                    </button>
+                </div>
+
                 <!-- Active Market Sessions -->
                 <div class="session-badges">
                     <span class="session-pill" id="sess-lon" title="London Session (07:00 - 16:00 UTC)">
@@ -216,7 +226,7 @@
             </button>
             <button class="seg-btn" data-tab="tab-drivers">
                 <span class="seg-icon">📊</span>
-                <span class="seg-text">Macro & FedWatch</span>
+                <span class="seg-text">Macro & Correlations</span>
             </button>
             <button class="seg-btn" data-tab="tab-chart">
                 <span class="seg-icon">🌊</span>
@@ -242,10 +252,13 @@
                             <span style="font-size: 1.3rem;">⚡</span>
                             <div>
                                 <span style="font-size: 0.68rem; letter-spacing: 0.1em; color: #fbbf24; font-weight: 800; text-transform: uppercase;">3-Second Actionable Executive Summary</span>
-                                <h2 style="font-size: 1.15rem; color: #ffffff; margin: 0;">ONE-LOOK TRADER'S COCKPIT</h2>
+                                <h2 style="font-size: 1.15rem; color: #ffffff; margin: 0;">ONE-LOOK TRADER'S COCKPIT <span id="cockpit-mode-tag" style="color: #38bdf8; font-size: 0.8rem; margin-left: 8px;">[ ⚡ SCALPING MODE ]</span></h2>
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 10px;">
+                            <button class="btn-audio-brief" id="btn-audio-brief">
+                                <span id="audio-icon">🔊</span> <span id="audio-btn-text">Listen to AI Brief</span>
+                            </button>
                             <span id="one-look-lockout-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px;">
                                 🛡 SPREAD DEFENSE: OPTIMAL
                             </span>
@@ -280,7 +293,7 @@
                 <div class="hero-verdict-card">
                     <div class="verdict-top-bar">
                         <div class="verdict-label-group">
-                            <span class="eyebrow-tag">AI SYNTHESIS & DIRECTIONAL BIAS</span>
+                            <span class="eyebrow-tag">AI DEEP SYNTHESIS & DIRECTIONAL VERDICT</span>
                             <div class="verdict-badge neutral" id="hero-verdict-badge">
                                 <span class="verdict-pulse-dot"></span>
                                 <span class="verdict-title" id="hero-verdict-text">ANALYZING SIGNALS...</span>
@@ -295,7 +308,7 @@
                                 </svg>
                                 <span class="conf-pct" id="hero-conf-val">--%</span>
                             </div>
-                            <span class="conf-label">Model Confidence</span>
+                            <span class="conf-label">Model Conviction</span>
                         </div>
                     </div>
 
@@ -310,6 +323,36 @@
                         </p>
                     </div>
 
+                    <!-- Dynamic Mode-Specific Setup Card -->
+                    <div id="hero-setup-box" style="margin-top: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">🎯 <span id="setup-card-mode-title">Scalping Trade Setup</span></span>
+                            <span id="setup-card-rr" style="font-size: 0.72rem; color: #34d399; font-weight: 700;">R:R 1:2.5</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.75rem;">
+                            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                <span style="color: #94a3b8; display: block; font-size: 0.68rem;">ENTRY</span>
+                                <strong id="setup-entry" style="color: #ffffff;">$----.--</strong>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                <span style="color: #94a3b8; display: block; font-size: 0.68rem;">STOP LOSS</span>
+                                <strong id="setup-sl" style="color: #fb7185;">$----.--</strong>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                <span style="color: #94a3b8; display: block; font-size: 0.68rem;">TARGET 1</span>
+                                <strong id="setup-tp1" style="color: #34d399;">$----.--</strong>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                <span style="color: #94a3b8; display: block; font-size: 0.68rem;">TARGET 2</span>
+                                <strong id="setup-tp2" style="color: #fbbf24;">$----.--</strong>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                <span style="color: #94a3b8; display: block; font-size: 0.68rem;">HOLD HORIZON</span>
+                                <strong id="setup-horizon" style="color: #a5b4fc;">5-30 Mins</strong>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Catalyst Tags -->
                     <div class="catalyst-tags-strip" id="hero-catalyst-tags">
                         <span class="tag-pill">⏳ Synthesizing latest market intelligence...</span>
@@ -322,16 +365,16 @@
                             <span class="telem-val" id="tele-score">0.0</span>
                         </div>
                         <div class="telem-item">
-                            <span class="telem-lbl">Macro Bias:</span>
-                            <span class="telem-val" id="tele-macro">--</span>
+                            <span class="telem-lbl">Geopolitics:</span>
+                            <span class="telem-val" id="tele-geo">--</span>
                         </div>
                         <div class="telem-item">
-                            <span class="telem-lbl">News Sentiment:</span>
+                            <span class="telem-lbl">Correlations:</span>
+                            <span class="telem-val" id="tele-corr">--</span>
+                        </div>
+                        <div class="telem-item">
+                            <span class="telem-lbl">Financial Wire:</span>
                             <span class="telem-val" id="tele-news">--</span>
-                        </div>
-                        <div class="telem-item">
-                            <span class="telem-lbl">Provider:</span>
-                            <span class="telem-val" id="tele-provider">AI Engine</span>
                         </div>
                         <div class="telem-item sync-time">
                             <span class="telem-lbl">Last Sync:</span>
@@ -340,88 +383,88 @@
                     </div>
                 </div>
 
-                <!-- 2-COLUMN ESSENTIALS GRID -->
+                <!-- 6-FACTOR GOLD CORRELATIONS MATRIX CARD -->
+                <div class="info-card" style="margin-bottom: 20px;">
+                    <div class="card-header">
+                        <div class="header-title">
+                            <span class="card-icon">🌐</span>
+                            <h3>6-Factor Gold Intermarket Correlations Matrix</h3>
+                        </div>
+                        <span class="badge-tag" id="corr-composite-badge" style="color: #f59e0b; font-weight: 800;">COMPOSITE: --</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="correlations-matrix-grid" id="correlations-matrix-container">
+                            <div class="empty-state-mini">Calculating DXY, TIPS Yields, GSR, WTI Crude, SGE Premium, and VIX...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-COLUMN ESSENTIALS GRID (Geopolitics & Financial Wire) -->
                 <div class="essentials-grid">
-                    <!-- Column 1: 5-Tier Timeframe Scorecard & Dominant Drivers -->
+                    <!-- Column 1: Live Geopolitical Intelligence & Flashpoints -->
                     <div class="info-card">
                         <div class="card-header">
                             <div class="header-title">
-                                <span class="card-icon">🛡</span>
-                                <h3>5-Tier Timeframe Alignment Scorecard</h3>
+                                <span class="card-icon">🛡️</span>
+                                <h3>Real-Time Geopolitics & Safe-Haven Premium</h3>
                             </div>
-                            <span class="badge-tag" id="htf-sync-badge" style="color: #38bdf8; font-weight: 800;">HTF: --%</span>
+                            <span class="badge-gold" id="geo-cei-badge-hero">CEI: --/100</span>
                         </div>
                         <div class="card-body">
-                            <!-- 5-Tier Scorecard Pills Grid -->
-                            <div id="htf-scorecard-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px;">
-                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">1D (35%)</span>
-                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
-                                </div>
-                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">4H (30%)</span>
-                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
-                                </div>
-                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">1H (20%)</span>
-                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
-                                </div>
-                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">15M (10%)</span>
-                                    <strong style="font-size: 0.8rem; color: #fbbf24;">NEUT</strong>
-                                </div>
-                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
-                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">5M (5%)</span>
-                                    <strong style="font-size: 0.8rem; color: #fb7185;">BEAR</strong>
-                                </div>
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                                <span style="font-size: 0.78rem; color: #94a3b8;">Safe-Haven Premium Added:</span>
+                                <strong style="font-size: 1.15rem; color: #fbbf24;" id="geo-premium-val-hero">+$--.-- / oz</strong>
                             </div>
-
-                            <div style="font-size: 0.78rem; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border-left: 3px solid #38bdf8; margin-bottom: 14px;">
-                                <span>🧠 <b>Anti-Confusion Status:</b> <span id="htf-clarity-status">HEALTHY BULLISH PULLBACK (Buy-the-Dip in Demand)</span></span>
+                            <div class="depth-ratio-track" style="height: 8px; margin-bottom: 12px;">
+                                <div class="depth-ratio-fill bid" id="geo-cei-fill-hero" style="width: 75%;"></div>
                             </div>
-
-                            <div class="drivers-list" id="dominant-drivers-list">
-                                <div class="empty-state-mini">Loading dominant drivers...</div>
-                            </div>
-
-                            <div class="factor-split" style="margin-top: 10px;">
-                                <div class="factor-col supporting">
-                                    <span class="factor-header">✅ Supporting</span>
-                                    <ul class="factor-list" id="supporting-factors-list">
-                                        <li>Analyzing factors...</li>
-                                    </ul>
-                                </div>
-                                <div class="factor-col contradicting">
-                                    <span class="factor-header">⚠️ Headwinds</span>
-                                    <ul class="factor-list" id="contradicting-factors-list">
-                                        <li>Analyzing factors...</li>
-                                    </ul>
-                                </div>
+                            <p class="geo-narrative" id="geo-summary-text-hero">
+                                Monitoring Middle East escalations, Taiwan strait alerts, and Hormuz / Red Sea shipping security.
+                            </p>
+                            <div class="flashpoint-badge-row" id="geo-flashpoints-container">
+                                <span class="flashpoint-pill high">Hormuz: Elevated</span>
+                                <span class="flashpoint-pill high">Middle East: Escalating</span>
+                                <span class="flashpoint-pill">Taiwan: Monitored</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Column 2: Breaking News Live Preview & Instant Status -->
+                    <!-- Column 2: Financial Wire & Central Bank Gold Accumulation -->
                     <div class="info-card">
                         <div class="card-header">
                             <div class="header-title">
-                                <span class="card-icon">🚨</span>
-                                <h3>Latest News Catalysts</h3>
+                                <span class="card-icon">🏛️</span>
+                                <h3>Financial Wire & Central Bank Buying</h3>
                             </div>
-                            <button class="card-action-btn" id="btn-view-all-news">View All News ➔</button>
+                            <span class="badge-tag" id="fin-tone-badge" style="color: #34d399; font-weight: 800;">DOVISH FLOWS</span>
                         </div>
                         <div class="card-body">
-                            <div class="news-preview-list" id="news-preview-container">
-                                <div class="empty-state-mini">Fetching real-time news feeds...</div>
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">
+                                <span style="font-size: 0.78rem; color: #94a3b8;">Sovereign CB Buying Pace:</span>
+                                <strong style="font-size: 1.1rem; color: #fbbf24;" id="fin-cb-pace-val">1,140 Tonnes/Yr</strong>
                             </div>
-                            <div class="news-feed-status">
-                                <span class="live-dot-pulse"></span>
-                                <span>Capturing RSS feeds & recalculating live sentiment</span>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 0.75rem; text-align: center; margin-bottom: 12px;">
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">PBoC (China)</span>
+                                    <strong style="color: #34d399;">Active</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">RBI (India)</span>
+                                    <strong style="color: #34d399;">Active</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">NBP (Poland)</span>
+                                    <strong style="color: #34d399;">Active</strong>
+                                </div>
                             </div>
+                            <p class="geo-narrative" id="fin-narrative-summary">
+                                Central bank de-dollarization and Fed easing expectations provide continuous structural bid support.
+                            </p>
                         </div>
                     </div>
                 </div>
             </section>
+
 
             <!-- ========================================================= -->
             <!-- 2. SCALPER & DAY TRADING COCKPIT -->
@@ -846,6 +889,9 @@
                         <button class="radar-sub-btn" id="btn-view-matrix" data-view="view-matrix">
                             <span>📑</span> Key Zones Matrix & Analytics
                         </button>
+                        <button class="radar-sub-btn" id="btn-view-tvchart" data-view="view-tvchart">
+                            <span>📈</span> Live TradingView Candlestick Chart
+                        </button>
                     </div>
 
                     <!-- VIEW 1: HORIZONTAL LIQUIDITY DEPTH PROFILE (DEFAULT) -->
@@ -865,7 +911,7 @@
                         <!-- Horizontal Liquidity Volume-by-Price Canvas Container -->
                         <div class="chart-canvas-container">
                             <div class="chart-canvas-header">
-                                <span class="chart-canvas-title">Order-Flow Concentration & Depth Profile ($4,350 — $4,460)</span>
+                                <span class="chart-canvas-title">Order-Flow Concentration & Depth Profile</span>
                                 <span class="chart-canvas-hint">Inspect resting limit walls and stop-run targets</span>
                             </div>
                             <div class="horizontal-profile-wrapper" id="horizontal-profile-chart">
@@ -895,13 +941,21 @@
                                 <tbody id="zones-matrix-tbody">
                                     <tr>
                                         <td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">
-                                            Compiling institutional market structure matrix...
+                                             Compiling institutional market structure matrix...
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
+                    <!-- VIEW 3: LIVE TRADINGVIEW INTERACTIVE CANDLESTICK CHART -->
+                    <div class="radar-view-panel" id="view-tvchart">
+                        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; height: 560px;" id="tv-chart-container">
+                            <iframe id="tv-chart-iframe" src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=OANDA%3AXAUUSD&interval=5&hidesidetoolbar=0&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost" style="width: 100%; height: 100%; border: none;"></iframe>
+                        </div>
+                    </div>
+
 
                     <!-- METHODOLOGY & TRANSPARENCY NOTICE -->
                     <div class="methodology-notice-banner">

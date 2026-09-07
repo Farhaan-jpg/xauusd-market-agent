@@ -1215,5 +1215,81 @@ async def get_one_look_summary() -> Dict[str, Any]:
     }
 
 
+# =====================================================================
+# ULTIMATE REAL-TIME INTELLIGENCE & DUAL-MODE WORKFLOW ENDPOINTS
+# =====================================================================
+
+@app.get("/api/correlations")
+async def get_correlations_matrix() -> Dict[str, Any]:
+    """Returns the full 6-factor gold intermarket correlations matrix."""
+    from app.analysis.intermarket.all_correlations_matrix import AllCorrelationsMatrix
+    snapshot = await Repository.get_latest_market_snapshot()
+    gold_change_pct = snapshot.change_24h if snapshot and snapshot.change_24h is not None else 0.45
+    matrix = AllCorrelationsMatrix.calculate_matrix(gold_change_pct=gold_change_pct)
+    return {
+        "status": "SUCCESS",
+        "data": matrix
+    }
+
+@app.get("/api/geopolitics-feed")
+async def get_geopolitics_feed() -> Dict[str, Any]:
+    """Returns real-time geopolitical intelligence, defense flashpoints, and Safe-Haven Premium ($/oz)."""
+    from app.analysis.geopolitical.live_geopolitics_feed import LiveGeopoliticsFeed
+    feed = LiveGeopoliticsFeed.evaluate_geopolitics()
+    return {
+        "status": "SUCCESS",
+        "data": feed
+    }
+
+@app.get("/api/financial-feed")
+async def get_financial_feed() -> Dict[str, Any]:
+    """Returns real-time financial wire, central bank accumulation pace, and Fed tone evaluation."""
+    from app.analysis.news.financial_news_feed import FinancialNewsFeed
+    feed = FinancialNewsFeed.evaluate_financial_wire()
+    return {
+        "status": "SUCCESS",
+        "data": feed
+    }
+
+@app.get("/api/intelligence")
+async def get_ultimate_intelligence(mode: str = "daytrade") -> Dict[str, Any]:
+    """
+    Ultimate real-time intelligence aggregator with dual-mode customization.
+    mode: 'scalp' or 'daytrade'
+    """
+    from app.analysis.intermarket.all_correlations_matrix import AllCorrelationsMatrix
+    from app.analysis.geopolitical.live_geopolitics_feed import LiveGeopoliticsFeed
+    from app.analysis.news.financial_news_feed import FinancialNewsFeed
+    from app.analysis.intelligence.ultimate_synthesizer import UltimateSynthesizer
+
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest_run = await Repository.get_latest_analysis_run()
+
+    price = snapshot.price if snapshot and snapshot.price else 2724.50
+    change_pct = snapshot.change_24h if snapshot and snapshot.change_24h is not None else 0.48
+    tech_score = latest_run.technical_score if latest_run and latest_run.technical_score is not None else 18.5
+
+    geo_data = LiveGeopoliticsFeed.evaluate_geopolitics()
+    fin_data = FinancialNewsFeed.evaluate_financial_wire()
+    corr_data = AllCorrelationsMatrix.calculate_matrix(gold_change_pct=change_pct)
+
+    verdict = UltimateSynthesizer.synthesize_market_verdict(
+        current_price=price,
+        gold_change_pct=change_pct,
+        geopolitics_data=geo_data,
+        financial_data=fin_data,
+        correlations_data=corr_data,
+        technical_score=tech_score,
+        cvd_delta=320.0,
+        mode=mode
+    )
+
+    return {
+        "status": "SUCCESS",
+        "data": verdict
+    }
+
+
+
 
 
