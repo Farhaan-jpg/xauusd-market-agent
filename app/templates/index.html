@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="/static/css/style.css?v=3.5">
+    <link rel="stylesheet" href="/static/css/style.css?v=3.6">
     
     <!-- Critical Inline Styles for Radar & Charting Suite -->
     <style>
@@ -551,12 +551,6 @@
                         <button class="radar-sub-btn active" id="btn-view-horizontal" data-view="view-horizontal">
                             <span>📊</span> Volume-by-Price Profile
                         </button>
-                        <button class="radar-sub-btn" id="btn-view-vertical" data-view="view-vertical">
-                            <span>📈</span> Candlestick & Zone Radar
-                        </button>
-                        <button class="radar-sub-btn" id="btn-view-ladder" data-view="view-ladder">
-                            <span>🪜</span> Order-Flow Depth Ladder (DOM)
-                        </button>
                         <button class="radar-sub-btn" id="btn-view-matrix" data-view="view-matrix">
                             <span>📑</span> Key Zones Matrix & Analytics
                         </button>
@@ -591,70 +585,7 @@
                         </div>
                     </div>
 
-                    <!-- VIEW 2: VERTICAL CANDLESTICK & LIQUIDITY ZONE RADAR -->
-                    <div class="radar-view-panel" id="view-vertical">
-                        <div class="vertical-chart-toolbar">
-                            <div class="tf-selector-group">
-                                <span class="tf-lbl">Timeframe:</span>
-                                <button class="tf-btn" data-tf="M5">M5</button>
-                                <button class="tf-btn" data-tf="M15">M15</button>
-                                <button class="tf-btn active" data-tf="H1">H1</button>
-                                <button class="tf-btn" data-tf="H4">H4</button>
-                                <button class="tf-btn" data-tf="D1">D1</button>
-                            </div>
-                            <div class="chart-legend-mini">
-                                <span class="legend-chip supply"><span class="chip-dot red"></span> Supply / FVG Resistance</span>
-                                <span class="legend-chip demand"><span class="chip-dot green"></span> Demand / FVG Support</span>
-                                <span class="legend-chip spot"><span class="chip-dot gold"></span> Live Spot Laser</span>
-                            </div>
-                        </div>
-
-                        <div class="chart-canvas-container vertical-canvas-box">
-                            <canvas id="vertical-candle-canvas" width="900" height="380"></canvas>
-                            <div class="canvas-tooltip" id="candle-tooltip" style="display: none;"></div>
-                        </div>
-                    </div>
-
-                    <!-- VIEW 3: GRANULAR ORDER-FLOW DEPTH LADDER (DOM) -->
-                    <div class="radar-view-panel" id="view-ladder">
-                        <div class="liquidity-depth-ladder">
-                            <!-- OVERHEAD SUPPLY / RESISTANCE POOLS -->
-                            <div class="ladder-section supply-section">
-                                <div class="ladder-section-header">
-                                    <span class="badge-supply">🔴 OVERHEAD SUPPLY & BUY-SIDE STOP POOLS (RESISTANCE)</span>
-                                    <span class="ladder-hint">Equal Highs • Liquidity Sweep Targets</span>
-                                </div>
-                                <div class="ladder-items-list" id="ladder-supply-items">
-                                    <div class="empty-state-mini">Analyzing overhead liquidity...</div>
-                                </div>
-                            </div>
-
-                            <!-- 📍 LIVE SPOT PRICE PIN / ANCHOR -->
-                            <div class="ladder-spot-anchor">
-                                <div class="anchor-glow-line"></div>
-                                <div class="anchor-badge">
-                                    <span class="anchor-icon">⚜️</span>
-                                    <span class="anchor-label">CURRENT SPOT:</span>
-                                    <span class="anchor-price" id="ladder-spot-price">$--.--</span>
-                                    <span class="anchor-tag" id="ladder-spread-tag">Active Auction Level</span>
-                                </div>
-                                <div class="anchor-glow-line"></div>
-                            </div>
-
-                            <!-- RESTING DEMAND / SUPPORT POOLS -->
-                            <div class="ladder-section demand-section">
-                                <div class="ladder-section-header">
-                                    <span class="badge-demand">🟢 RESTING DEMAND & SELL-SIDE STOP POOLS (SUPPORT)</span>
-                                    <span class="ladder-hint">Order Blocks • Fair Value Gap Defense</span>
-                                </div>
-                                <div class="ladder-items-list" id="ladder-demand-items">
-                                    <div class="empty-state-mini">Analyzing resting demand pools...</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- VIEW 4: INSTITUTIONAL KEY ZONES MATRIX & ANALYTICS -->
+                    <!-- VIEW 2: INSTITUTIONAL KEY ZONES MATRIX & ANALYTICS -->
                     <div class="radar-view-panel" id="view-matrix">
                         <div class="zones-matrix-table-wrap">
                             <table class="zones-matrix-table">
@@ -810,6 +741,6 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="toast-container"></div>
 
-    <script src="/static/js/app.js?v=3.5"></script>
+    <script src="/static/js/app.js?v=3.6"></script>
 </body>
 </html>

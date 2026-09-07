@@ -11,7 +11,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initSessions();
     initRadarSubNav();
-    initVerticalChart();
     initActionButtons();
     initSettingsDrawer();
     
@@ -45,9 +44,6 @@ function initTabs() {
                 setTimeout(() => {
                     if (cachedLiquidityData) {
                         updateLiquidityData(cachedLiquidityData);
-                    }
-                    if (currentActiveRadarView === "view-vertical") {
-                        loadAndRenderVerticalCandles(activeCandleTimeframe);
                     }
                 }, 30);
             }
@@ -525,13 +521,10 @@ function updateInstitutionalFlow(data) {
 }
 
 let currentActiveRadarView = "view-horizontal";
-let activeCandleTimeframe = "H1";
-let cachedCandlesData = null;
 let cachedLiquidityData = null;
-let candleMousePos = null;
 
 /* ==============================================================================
-   4A. RADAR SUB-NAVIGATION & MULTI-CHART CONTROLLER
+   4A. RADAR SUB-NAVIGATION CONTROLLER
    ============================================================================== */
 function initRadarSubNav() {
     const subButtons = document.querySelectorAll(".radar-sub-btn");
@@ -552,9 +545,7 @@ function initRadarSubNav() {
             const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
             const curPrice = cachedLiquidityData?.current_price || liveDomPrice || 4430.00;
 
-            if (targetView === "view-vertical") {
-                loadAndRenderVerticalCandles(activeCandleTimeframe);
-            } else if (targetView === "view-horizontal" && cachedLiquidityData) {
+            if (targetView === "view-horizontal" && cachedLiquidityData) {
                 renderHorizontalProfile(cachedLiquidityData.horizontal_profile, curPrice);
             } else if (targetView === "view-matrix" && cachedLiquidityData) {
                 renderZonesMatrix(cachedLiquidityData, curPrice);
@@ -661,287 +652,7 @@ function renderHorizontalProfile(profile, curPrice) {
 }
 
 /* ==============================================================================
-   4C. VERTICAL CANDLESTICK & LIQUIDITY ZONE RADAR
-   ============================================================================== */
-function initVerticalChart() {
-    const tfButtons = document.querySelectorAll(".tf-btn");
-    tfButtons.forEach(btn => {
-        btn.addEventListener("click", () => {
-            tfButtons.forEach(b => b.classList.remove("active"));
-            btn.classList.add("active");
-            activeCandleTimeframe = btn.getAttribute("data-tf") || "H1";
-            loadAndRenderVerticalCandles(activeCandleTimeframe);
-        });
-    });
-
-    const canvas = document.getElementById("vertical-candle-canvas");
-    if (canvas) {
-        canvas.addEventListener("mousemove", (e) => {
-            const rect = canvas.getBoundingClientRect();
-            candleMousePos = {
-                x: e.clientX - rect.left,
-                y: e.clientY - rect.top,
-                canvasWidth: rect.width,
-                canvasHeight: rect.height
-            };
-            if (cachedCandlesData) {
-                drawCandlestickCanvas(cachedCandlesData);
-            }
-        });
-
-        canvas.addEventListener("mouseleave", () => {
-            candleMousePos = null;
-            const tooltip = document.getElementById("candle-tooltip");
-            if (tooltip) tooltip.style.display = "none";
-            if (cachedCandlesData) {
-                drawCandlestickCanvas(cachedCandlesData);
-            }
-        });
-
-        window.addEventListener("resize", () => {
-            if (currentActiveRadarView === "view-vertical" && cachedCandlesData) {
-                drawCandlestickCanvas(cachedCandlesData);
-            }
-        });
-    }
-}
-
-async function loadAndRenderVerticalCandles(tf) {
-    try {
-        const res = await fetch(`/api/candles?timeframe=${tf || activeCandleTimeframe}`);
-        if (!res.ok) return;
-        const data = await res.json();
-        cachedCandlesData = data;
-        drawCandlestickCanvas(data);
-    } catch (e) {
-        console.debug("Failed to load candles:", e);
-    }
-}
-
-function drawCandlestickCanvas(data) {
-    const canvas = document.getElementById("vertical-candle-canvas");
-    if (!canvas || !data || !Array.isArray(data.candles) || data.candles.length === 0) return;
-
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const width = rect.width > 50 ? rect.width : (canvas.parentElement?.clientWidth || 860);
-    const height = rect.height > 50 ? rect.height : 380;
-
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.resetTransform();
-    ctx.scale(dpr, dpr);
-
-    // Padding
-    const padTop = 20;
-    const padBottom = 35;
-    const padLeft = 15;
-    const padRight = 75; // for price axis
-
-    const plotW = width - padLeft - padRight;
-    const plotH = height - padTop - padBottom;
-
-    // Determine min/max price
-    const candles = data.candles;
-    let minPrice = Infinity;
-    let maxPrice = -Infinity;
-
-    candles.forEach(c => {
-        if (c.low < minPrice) minPrice = c.low;
-        if (c.high > maxPrice) maxPrice = c.high;
-    });
-
-    const overlays = Array.isArray(data.liquidity_overlays) ? data.liquidity_overlays : [];
-    overlays.forEach(ov => {
-        if (ov.range_low && ov.range_low < minPrice) minPrice = ov.range_low;
-        if (ov.range_high && ov.range_high > maxPrice) maxPrice = ov.range_high;
-        if (ov.price && ov.price < minPrice) minPrice = ov.price;
-        if (ov.price && ov.price > maxPrice) maxPrice = ov.price;
-    });
-
-    const curPrice = data.current_price || (candles[candles.length - 1] ? candles[candles.length - 1].close : 4430.0);
-    if (curPrice < minPrice) minPrice = curPrice;
-    if (curPrice > maxPrice) maxPrice = curPrice;
-
-    // Add 3% buffer
-    const priceSpan = (maxPrice - minPrice) || 10;
-    minPrice -= priceSpan * 0.05;
-    maxPrice += priceSpan * 0.05;
-
-    const priceToY = (p) => padTop + plotH - ((p - minPrice) / (maxPrice - minPrice)) * plotH;
-    const yToPrice = (y) => minPrice + ((padTop + plotH - y) / plotH) * (maxPrice - minPrice);
-
-    // 1. Background
-    ctx.fillStyle = "#0a0d14";
-    ctx.fillRect(0, 0, width, height);
-
-    // 2. Horizontal Grid Lines & Price Axis
-    const numGridLines = 6;
-    ctx.textAlign = "left";
-    ctx.font = "10px JetBrains Mono, monospace";
-
-    for (let i = 0; i <= numGridLines; i++) {
-        const y = padTop + (plotH / numGridLines) * i;
-        const p = yToPrice(y);
-
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(padLeft, y);
-        ctx.lineTo(width - padRight, y);
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-        ctx.fillText(`$${p.toFixed(1)}`, width - padRight + 8, y + 3);
-    }
-    ctx.setLineDash([]);
-
-    // 3. Liquidity Zone Overlays
-    overlays.forEach(ov => {
-        const topY = priceToY(ov.range_high || ov.price + 2.0);
-        const botY = priceToY(ov.range_low || ov.price - 2.0);
-        const boxH = Math.max(4, botY - topY);
-
-        ctx.fillStyle = ov.color || "rgba(244, 63, 94, 0.15)";
-        ctx.fillRect(padLeft, topY, plotW, boxH);
-
-        ctx.strokeStyle = ov.border_color || "rgba(244, 63, 94, 0.4)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.strokeRect(padLeft, topY, plotW, boxH);
-        ctx.setLineDash([]);
-
-        // Zone Tag
-        ctx.fillStyle = ov.border_color || "#f43f5e";
-        ctx.font = "9px Inter, sans-serif";
-        ctx.fillText(ov.title || ov.type, padLeft + 6, topY + Math.min(boxH - 2, 11));
-    });
-
-    // 4. Candlesticks
-    const barCount = candles.length;
-    const barWidth = Math.max(3, (plotW / barCount) * 0.7);
-    const barSpacing = plotW / barCount;
-
-    candles.forEach((c, idx) => {
-        const x = padLeft + (idx * barSpacing) + (barSpacing / 2);
-        const isBull = c.close >= c.open;
-        const color = isBull ? "#10b981" : "#f43f5e";
-
-        // High-Low Wick
-        const yHigh = priceToY(c.high);
-        const yLow = priceToY(c.low);
-
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(x, yHigh);
-        ctx.lineTo(x, yLow);
-        ctx.stroke();
-
-        // Open-Close Body
-        const yOpen = priceToY(c.open);
-        const yClose = priceToY(c.close);
-        const bodyTop = Math.min(yOpen, yClose);
-        const bodyH = Math.max(2, Math.abs(yOpen - yClose));
-
-        ctx.fillStyle = color;
-        ctx.fillRect(x - (barWidth / 2), bodyTop, barWidth, bodyH);
-    });
-
-    // 5. Time Axis (Bottom)
-    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-    ctx.font = "9px JetBrains Mono, monospace";
-    ctx.textAlign = "center";
-    const timeStep = Math.max(1, Math.floor(barCount / 6));
-
-    for (let i = 0; i < barCount; i += timeStep) {
-        const c = candles[i];
-        if (!c || !c.time) continue;
-        const x = padLeft + (i * barSpacing) + (barSpacing / 2);
-        const d = new Date(c.time * 1000);
-        const timeStr = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
-        ctx.fillText(timeStr, x, height - 10);
-    }
-
-    // 6. Live Spot Laser Line & Right Badge
-    const spotY = priceToY(curPrice);
-    if (spotY >= padTop && spotY <= padTop + plotH) {
-        ctx.strokeStyle = "#f59e0b";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 3]);
-        ctx.beginPath();
-        ctx.moveTo(padLeft, spotY);
-        ctx.lineTo(width - padRight, spotY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Gold Badge
-        ctx.fillStyle = "#f59e0b";
-        ctx.fillRect(width - padRight + 2, spotY - 9, padRight - 6, 18);
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 9px JetBrains Mono, monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(`$${curPrice.toFixed(2)}`, width - (padRight / 2), spotY + 3);
-    }
-
-    // 7. Interactive Crosshair & Tooltip
-    if (candleMousePos && candleMousePos.x >= padLeft && candleMousePos.x <= width - padRight && candleMousePos.y >= padTop && candleMousePos.y <= padTop + plotH) {
-        const mx = candleMousePos.x;
-        const my = candleMousePos.y;
-
-        // Draw crosshair lines
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-        ctx.lineWidth = 0.8;
-        ctx.setLineDash([2, 2]);
-
-        ctx.beginPath();
-        ctx.moveTo(mx, padTop);
-        ctx.lineTo(mx, padTop + plotH);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(padLeft, my);
-        ctx.lineTo(width - padRight, my);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Hover price pill on Y axis
-        const hoverPrice = yToPrice(my);
-        ctx.fillStyle = "#3b82f6";
-        ctx.fillRect(width - padRight + 2, my - 8, padRight - 6, 16);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 9px JetBrains Mono, monospace";
-        ctx.textAlign = "center";
-        ctx.fillText(`$${hoverPrice.toFixed(2)}`, width - (padRight / 2), my + 3);
-
-        // Find nearest candle
-        const candleIdx = Math.min(barCount - 1, Math.max(0, Math.floor((mx - padLeft) / barSpacing)));
-        const hoveredCandle = candles[candleIdx];
-
-        if (hoveredCandle) {
-            const tooltip = document.getElementById("candle-tooltip");
-            if (tooltip) {
-                const isBull = hoveredCandle.close >= hoveredCandle.open;
-                const d = new Date(hoveredCandle.time * 1000);
-                tooltip.style.display = "block";
-                tooltip.style.left = `${Math.min(width - 200, Math.max(20, mx + 15))}px`;
-                tooltip.style.top = `${Math.min(height - 110, Math.max(10, my - 30))}px`;
-                tooltip.innerHTML = `
-                    <div class="tt-time">${d.toUTCString().slice(5, 22)} UTC</div>
-                    <div class="tt-row"><span>Open:</span> <b>$${hoveredCandle.open.toFixed(2)}</b></div>
-                    <div class="tt-row"><span>High:</span> <b class="color-green">$${hoveredCandle.high.toFixed(2)}</b></div>
-                    <div class="tt-row"><span>Low:</span> <b class="color-red">$${hoveredCandle.low.toFixed(2)}</b></div>
-                    <div class="tt-row"><span>Close:</span> <b class="${isBull ? 'color-green' : 'color-red'}">$${hoveredCandle.close.toFixed(2)}</b></div>
-                `;
-            }
-        }
-    }
-}
-
-/* ==============================================================================
-   4D. INSTITUTIONAL ZONES MATRIX & ANALYTICS TABLE
+   4C. INSTITUTIONAL ZONES MATRIX & ANALYTICS TABLE
    ============================================================================== */
 function renderZonesMatrix(data, curPrice) {
     const tbody = document.getElementById("zones-matrix-tbody");
@@ -990,7 +701,7 @@ function renderZonesMatrix(data, curPrice) {
 }
 
 /* ==============================================================================
-   4E. MAIN LIQUIDITY UPDATER
+   4D. MAIN LIQUIDITY UPDATER
    ============================================================================== */
 function updateLiquidityData(data) {
     if (!data) return;
@@ -1060,19 +771,6 @@ function updateLiquidityData(data) {
     // Render Key Zones Matrix
     renderZonesMatrix(data, curPrice);
 
-    // If Vertical Radar is active, update candles or current price
-    if (currentActiveRadarView === "view-vertical" && cachedCandlesData) {
-        cachedCandlesData.current_price = curPrice;
-        drawCandlestickCanvas(cachedCandlesData);
-    }
-
-    // Spot Price Anchor in Ladder
-    const spotEl = document.getElementById("ladder-spot-price");
-    if (spotEl) {
-        const decStr = curPrice.toString().split('.')[1] || "";
-        spotEl.textContent = `$${decStr.length > 2 ? curPrice.toFixed(3) : curPrice.toFixed(2)}`;
-    }
-
     // Orderflow Bias Pill
     const biasPill = document.getElementById("liq-orderflow-bias");
     const biasText = document.getElementById("liq-orderflow-text");
@@ -1080,64 +778,6 @@ function updateLiquidityData(data) {
         const isBull = data.order_flow_bias !== "BEARISH_ORDER_FLOW";
         biasPill.className = `orderflow-bias-pill ${isBull ? '' : 'bearish'}`;
         biasText.textContent = isBull ? "BULLISH ACCUMULATION" : "BEARISH DISTRIBUTION";
-    }
-
-    // Supply items (Above Price in Ladder)
-    const supplyList = document.getElementById("ladder-supply-items");
-    if (supplyList && Array.isArray(data.liquidity_above)) {
-        if (data.liquidity_above.length === 0) {
-            supplyList.innerHTML = `<div class="empty-state-mini">No overhead supply pools detected.</div>`;
-        } else {
-            supplyList.innerHTML = data.liquidity_above.map(z => {
-                const dist = Math.abs(z.price - curPrice).toFixed(1);
-                const strength = Math.round(z.strength || 85);
-                return `
-                    <div class="ladder-row">
-                        <div class="ladder-depth-bar" style="width: ${strength}%;"></div>
-                        <div class="ladder-left">
-                            <span class="ladder-price">$${Number(z.price).toFixed(2)}</span>
-                            <span class="ladder-dist">+${dist} pts</span>
-                        </div>
-                        <div class="ladder-mid">
-                            <span class="ladder-type-name">${escapeHtml(z.type.replace(/_/g, ' '))}</span>
-                            <span class="ladder-sub-detail">${escapeHtml(z.sweep_risk || 'Resistance Pool')} • ${z.timeframe || 'H1'}</span>
-                        </div>
-                        <div class="ladder-right">
-                            <span class="ladder-strength-badge">${strength}% Depth</span>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
-    }
-
-    // Demand items (Below Price in Ladder)
-    const demandList = document.getElementById("ladder-demand-items");
-    if (demandList && Array.isArray(data.liquidity_below)) {
-        if (data.liquidity_below.length === 0) {
-            demandList.innerHTML = `<div class="empty-state-mini">No resting demand pools detected.</div>`;
-        } else {
-            demandList.innerHTML = data.liquidity_below.map(z => {
-                const dist = Math.abs(curPrice - z.price).toFixed(1);
-                const strength = Math.round(z.strength || 85);
-                return `
-                    <div class="ladder-row">
-                        <div class="ladder-depth-bar" style="width: ${strength}%;"></div>
-                        <div class="ladder-left">
-                            <span class="ladder-price">$${Number(z.price).toFixed(2)}</span>
-                            <span class="ladder-dist">-${dist} pts</span>
-                        </div>
-                        <div class="ladder-mid">
-                            <span class="ladder-type-name">${escapeHtml(z.type.replace(/_/g, ' '))}</span>
-                            <span class="ladder-sub-detail">${escapeHtml(z.sweep_risk || 'Support Pool')} • ${z.timeframe || 'H1'}</span>
-                        </div>
-                        <div class="ladder-right">
-                            <span class="ladder-strength-badge">${strength}% Depth</span>
-                        </div>
-                    </div>
-                `;
-            }).join("");
-        }
     }
 }
 
