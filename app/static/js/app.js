@@ -688,6 +688,9 @@ function initSettingsDrawer() {
                 TELEGRAM_ALERTS_ENABLED: document.getElementById("cfg-tg-enable")?.checked,
                 AI_PRIORITY: document.getElementById("cfg-ai-provider")?.value,
                 GEMINI_API_KEY: document.getElementById("cfg-gemini-key")?.value.trim(),
+                GEMINI_MODEL: document.getElementById("cfg-gemini-model")?.value.trim(),
+                OPENROUTER_API_KEY: document.getElementById("cfg-openrouter-key")?.value.trim(),
+                OPENROUTER_MODEL: document.getElementById("cfg-openrouter-model")?.value.trim(),
                 ANALYSIS_INTERVAL_SECONDS: parseInt(document.getElementById("cfg-sync-interval")?.value || "10")
             };
 
@@ -712,6 +715,35 @@ function initSettingsDrawer() {
                 }
             } catch (e) {
                 if (statusEl) statusEl.textContent = "❌ Network error.";
+            }
+        });
+    }
+
+    // Test AI connection
+    const btnTestAi = document.getElementById("btn-test-ai");
+    if (btnTestAi) {
+        btnTestAi.addEventListener("click", async () => {
+            const origText = btnTestAi.innerHTML;
+            btnTestAi.innerHTML = `<span>⏳</span> Testing AI Engine...`;
+            btnTestAi.disabled = true;
+            try {
+                const prov = document.getElementById("cfg-ai-provider")?.value || "gemini_first";
+                const res = await fetch("/api/test-ai", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ provider: prov })
+                });
+                const data = await res.json();
+                if (data.status === "SUCCESS") {
+                    showToast(`✅ ${data.provider} Active (${data.latency_ms}ms)! Verdict: ${data.verdict}`);
+                } else {
+                    showToast(`⚠️ AI Warning: ${data.message || "Failed to reach model"}`);
+                }
+            } catch (e) {
+                showToast("❌ Network error connecting to AI endpoint.");
+            } finally {
+                btnTestAi.innerHTML = origText;
+                btnTestAi.disabled = false;
             }
         });
     }
@@ -748,12 +780,20 @@ async function loadConfigIntoDrawer() {
         const tgChat = document.getElementById("cfg-tg-chatid");
         const tgEnable = document.getElementById("cfg-tg-enable");
         const aiProv = document.getElementById("cfg-ai-provider");
+        const geminiKey = document.getElementById("cfg-gemini-key");
+        const geminiModel = document.getElementById("cfg-gemini-model");
+        const openrouterKey = document.getElementById("cfg-openrouter-key");
+        const openrouterModel = document.getElementById("cfg-openrouter-model");
         const syncInt = document.getElementById("cfg-sync-interval");
 
         if (tgToken) tgToken.placeholder = cfg.telegram_token_masked || "123456:ABC-DEF...";
         if (tgChat && cfg.telegram_chat_id) tgChat.value = cfg.telegram_chat_id;
         if (tgEnable) tgEnable.checked = cfg.telegram_alerts_enabled;
         if (aiProv && cfg.ai_priority) aiProv.value = cfg.ai_priority;
+        if (geminiKey) geminiKey.placeholder = cfg.gemini_key_masked || "AIzaSy... (Paste Google AI Studio key)";
+        if (geminiModel && cfg.gemini_model) geminiModel.value = cfg.gemini_model;
+        if (openrouterKey) openrouterKey.placeholder = cfg.openrouter_key_masked || "sk-or-v1-... (Paste OpenRouter key)";
+        if (openrouterModel && cfg.openrouter_model) openrouterModel.value = cfg.openrouter_model;
         if (syncInt && cfg.analysis_interval_seconds) syncInt.value = cfg.analysis_interval_seconds;
     } catch (e) {
         console.debug("Config load error:", e);

@@ -76,7 +76,9 @@ class AlertTemplates:
 
         events_str = ""
         for e in upcoming_events[:2]:
-            events_str += f"\n  • <b>{esc(e.get('event_name', ''))}</b> [{esc(e.get('importance', ''))}]"
+            e_name = e.get("event_name", "") if isinstance(e, dict) else getattr(e, "event_name", "")
+            e_imp = e.get("importance", "") if isinstance(e, dict) else getattr(e, "importance", "")
+            events_str += f"\n  • <b>{esc(e_name)}</b> [{esc(e_imp)}]"
         if not events_str: events_str = "\n  • No critical events in next 24h"
 
         summary_text = executive_verdict_summary or macro_summary
@@ -144,7 +146,10 @@ class AlertTemplates:
         
         events_str = ""
         for e in events_today[:3]:
-            events_str += f"\n  • <b>{esc(e.get('event_name', ''))}</b> ({esc(e.get('scheduled_time', ''))[:16]}) - [{esc(e.get('importance', 'HIGH'))}]"
+            e_name = e.get("event_name", "") if isinstance(e, dict) else getattr(e, "event_name", "")
+            e_time = str(e.get("scheduled_time", "") if isinstance(e, dict) else getattr(e, "scheduled_time", ""))[:16]
+            e_imp = e.get("importance", "HIGH") if isinstance(e, dict) else getattr(e, "importance", "HIGH")
+            events_str += f"\n  • <b>{esc(e_name)}</b> ({esc(e_time)}) - [{esc(e_imp)}]"
         if not events_str:
             events_str = "\n  • No major tier-1 releases scheduled for this session"
 

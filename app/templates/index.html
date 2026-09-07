@@ -516,21 +516,37 @@
                 <button class="btn-test-tg" id="btn-test-telegram">📨 Send Test Telegram Message</button>
             </div>
 
-            <!-- AI Model Priority -->
+            <!-- AI Model Configuration -->
             <div class="setting-group">
-                <h4>🧠 AI Intelligence Provider</h4>
+                <h4>🧠 AI Intelligence Engine</h4>
+                <p class="setting-desc">Configure Google Gemini and OpenRouter API keys and live model selection.</p>
                 <div class="form-field">
                     <label for="cfg-ai-provider">Priority Engine:</label>
                     <select id="cfg-ai-provider" class="modern-select">
-                        <option value="GEMINI" selected>Gemini 2.5 Flash (Recommended)</option>
-                        <option value="OPENROUTER">OpenRouter Multi-Model</option>
-                        <option value="DETERMINISTIC">Deterministic Quant Only (No AI)</option>
+                        <option value="gemini_first" selected>Google Gemini First (Primary)</option>
+                        <option value="openrouter_first">OpenRouter First (Free & Multi-Model)</option>
+                        <option value="deterministic_only">Deterministic Quant Only (No AI API)</option>
                     </select>
                 </div>
                 <div class="form-field">
-                    <label for="cfg-gemini-key">Gemini API Key (Optional):</label>
-                    <input type="password" id="cfg-gemini-key" placeholder="AIzaSy... (Uses system default if blank)">
+                    <label for="cfg-gemini-key">Gemini API Key:</label>
+                    <input type="password" id="cfg-gemini-key" placeholder="AIzaSy... (Paste Google AI Studio key)">
                 </div>
+                <div class="form-field">
+                    <label for="cfg-gemini-model">Gemini Model:</label>
+                    <input type="text" id="cfg-gemini-model" placeholder="e.g. gemini-2.5-flash, gemini-2.0-flash">
+                </div>
+                <div class="form-field">
+                    <label for="cfg-openrouter-key">OpenRouter API Key:</label>
+                    <input type="password" id="cfg-openrouter-key" placeholder="sk-or-v1-... (Paste OpenRouter key)">
+                </div>
+                <div class="form-field">
+                    <label for="cfg-openrouter-model">OpenRouter Models (comma-separated):</label>
+                    <input type="text" id="cfg-openrouter-model" placeholder="e.g. openrouter/free, google/gemma-4-26b-a4b-it:free">
+                </div>
+                <button class="btn-test-ai" id="btn-test-ai" style="margin-top: 8px; width: 100%; padding: 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span>⚡</span> Test AI Connection & Latency
+                </button>
             </div>
 
             <!-- Polling Intervals -->

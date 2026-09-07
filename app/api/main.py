@@ -527,6 +527,94 @@ async def get_history() -> List[Dict[str, Any]]:
         } for r in runs
     ]
 
+@app.get("/api/ai-models")
+async def get_ai_models() -> Dict[str, Any]:
+    """Returns currently available and running models for Gemini and OpenRouter."""
+    gemini_models = await orchestrator.synthesizer.gemini.get_available_models()
+    openrouter_models = await orchestrator.synthesizer.openrouter.get_available_models()
+    live_free_openrouter = await orchestrator.synthesizer.openrouter.fetch_live_free_models()
+
+    return {
+        "gemini": {
+            "current_model": settings.GEMINI_MODEL,
+            "configured": settings.has_gemini,
+            "available_models": gemini_models
+        },
+        "openrouter": {
+            "current_model": settings.OPENROUTER_MODEL,
+            "configured": settings.has_openrouter,
+            "live_free_models": live_free_openrouter,
+            "total_available": len(openrouter_models),
+            "available_models": openrouter_models[:60]
+        },
+        "active_priority": settings.AI_PRIORITY
+    }
+
+@app.post("/api/test-ai")
+async def test_ai_connection(payload: Dict[str, Any] = None) -> Dict[str, Any]:
+    """Tests the configured or requested AI provider with a live test synthesis prompt."""
+    provider_name = (payload or {}).get("provider", settings.AI_PRIORITY).lower()
+    start_t = time.time()
+
+    test_input = {
+        "gold_price": 4400.0,
+        "market": {"price": 4400.0, "rsi": 54.2, "trend": "BULLISH", "volatility": "NORMAL", "data_quality": "GOOD"},
+        "liquidity": {"liquidity_above": [{"price": 4420.0, "zone_type": "RESISTANCE", "strength": 85}], "liquidity_below": [{"price": 4380.0, "zone_type": "SUPPORT", "strength": 90}]},
+        "macro": {"macro_score": 25.0, "dxy_change_pct": -0.15, "us10y_yield": 4.75, "us2y_yield": 3.75, "vix": 14.5, "macro_condition": "SUPPORTIVE"},
+        "news": {"news_score": 30.0, "top_headlines": [{"title": "Global Central Banks Continue Gold Accumulation", "source": "Reuters"}]},
+        "direction": {"direction": "BULLISH", "direction_score": 28.5, "confidence": 75.0, "dominant_drivers": ["USD Softening", "Central Bank Demand"]},
+        "upcoming_events": []
+    }
+
+    try:
+        if "openrouter" in provider_name:
+            if not settings.has_openrouter:
+                return {"status": "ERROR", "message": "OpenRouter API Key is not configured."}
+            res = await orchestrator.synthesizer.openrouter.synthesize(test_input)
+            latency = round((time.time() - start_t) * 1000, 1)
+            return {
+                "status": "SUCCESS",
+                "provider": "OpenRouter",
+                "latency_ms": latency,
+                "direction": res.direction,
+                "score": res.score,
+                "confidence": res.confidence,
+                "verdict": res.final_market_verdict,
+                "summary": res.executive_verdict_summary[:200]
+            }
+        elif "gemini" in provider_name:
+            if not settings.has_gemini:
+                return {"status": "ERROR", "message": "Gemini API Key is not configured."}
+            res = await orchestrator.synthesizer.gemini.synthesize(test_input)
+            latency = round((time.time() - start_t) * 1000, 1)
+            return {
+                "status": "SUCCESS",
+                "provider": "Google Gemini",
+                "latency_ms": latency,
+                "direction": res.direction,
+                "score": res.score,
+                "confidence": res.confidence,
+                "verdict": res.final_market_verdict,
+                "summary": res.executive_verdict_summary[:200]
+            }
+        else:
+            res = await orchestrator.synthesizer.fallback.synthesize(test_input)
+            latency = round((time.time() - start_t) * 1000, 1)
+            return {
+                "status": "SUCCESS",
+                "provider": "Deterministic Fallback",
+                "latency_ms": latency,
+                "direction": res.direction,
+                "score": res.score,
+                "confidence": res.confidence,
+                "verdict": res.final_market_verdict,
+                "summary": res.executive_verdict_summary[:200]
+            }
+    except Exception as e:
+        latency = round((time.time() - start_t) * 1000, 1)
+        logger.error(f"AI test error: {e}")
+        return {"status": "ERROR", "latency_ms": latency, "message": str(e)}
+
 @app.get("/api/config")
 async def get_config() -> Dict[str, Any]:
     """Returns current runtime configuration with secrets masked."""
@@ -557,7 +645,7 @@ async def get_config() -> Dict[str, Any]:
 
 @app.post("/api/config")
 async def update_config(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Updates runtime configuration in memory."""
+    """Updates runtime configuration in memory and saves to .env."""
     # Filter out empty or masked secret strings
     clean_updates = {}
     for k, v in payload.items():
@@ -588,6 +676,25 @@ async def update_config(payload: Dict[str, Any]) -> Dict[str, Any]:
     orchestrator.alert_engine.bot.token = settings.TELEGRAM_BOT_TOKEN
     orchestrator.alert_engine.bot.chat_id = settings.TELEGRAM_CHAT_ID
     orchestrator.alert_engine.bot.enabled = settings.TELEGRAM_ALERTS_ENABLED and settings.has_telegram
+
+    # Persist to .env file
+    try:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            env_map = {}
+            for line in lines:
+                if "=" in line and not line.strip().startswith("#"):
+                    k, v = line.split("=", 1)
+                    env_map[k.strip()] = v.strip()
+            for k, v in clean_updates.items():
+                env_map[k] = str(v)
+            with open(env_path, "w", encoding="utf-8") as f:
+                for k, v in env_map.items():
+                    f.write(f"{k}={v}\n")
+    except Exception as e:
+        logger.warning(f"Could not persist updates to .env: {e}")
 
     logger.info(f"Configuration updated dynamically: {list(clean_updates.keys())}")
     return {"status": "SUCCESS", "message": "Configuration updated successfully."}

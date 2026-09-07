@@ -44,12 +44,13 @@ class AISynthesizer:
         }
 
         # Determine priority order
-        if settings.AI_PRIORITY == "openrouter_first":
+        prio = (settings.AI_PRIORITY or "gemini_first").lower().strip()
+        if prio in ["openrouter_first", "openrouter"]:
             tier_order = [
                 ("OpenRouter", self.openrouter, settings.has_openrouter),
                 ("Google_Gemini", self.gemini, settings.has_gemini)
             ]
-        elif settings.AI_PRIORITY == "deterministic_only":
+        elif prio in ["deterministic_only", "deterministic", "none"]:
             tier_order = []
         else: # gemini_first (default)
             tier_order = [

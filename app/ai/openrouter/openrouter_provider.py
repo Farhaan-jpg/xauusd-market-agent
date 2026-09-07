@@ -1,7 +1,9 @@
-"""OpenRouter AI Provider for secondary fallback synthesis."""
+"""OpenRouter AI Provider with real-time dynamic model discovery and fallback."""
 import asyncio
 import json
-from typing import Any, Dict, List
+import re
+import time
+from typing import Any, Dict, List, Optional
 import httpx
 from app.ai.base import AISynthesisOutput, BaseAIProvider
 from app.ai.prompts.prompts import SYSTEM_PROMPT, generate_synthesis_prompt
@@ -9,34 +11,68 @@ from app.config.settings import settings
 from app.core.logging import logger
 
 class OpenRouterProvider(BaseAIProvider):
-    """OpenRouter integration with dynamic multi-model fallback across active free and low-cost models."""
+    """OpenRouter integration with dynamic model discovery across verified active free and low-cost models."""
 
     def __init__(self):
         super().__init__(name="OpenRouter")
         self.api_key = settings.OPENROUTER_API_KEY
-        configured_models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
-        
-        # Live verified free models and popular high-efficiency fallbacks
-        fallback_models = [
-            "openrouter/free",
-            "google/gemma-4-31b-it:free",
-            "google/gemma-4-26b-a4b-it:free",
+        self.models = [m.strip() for m in settings.OPENROUTER_MODEL.split(",") if m.strip()]
+        self._cached_live_models: List[str] = []
+        self._last_discovery_time: float = 0.0
+
+    async def get_available_models(self) -> List[Dict[str, Any]]:
+        """Fetches all currently available OpenRouter models, tagging free ones."""
+        try:
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                res = await client.get("https://openrouter.ai/api/v1/models", headers={"User-Agent": "Mozilla/5.0"})
+                if res.status_code == 200:
+                    data = res.json().get("data", [])
+                    models_list = []
+                    for m in data:
+                        mid = m.get("id", "")
+                        pricing = m.get("pricing", {})
+                        is_free = ":free" in mid or (pricing.get("prompt") == "0" and pricing.get("completion") == "0")
+                        models_list.append({
+                            "id": mid,
+                            "name": m.get("name", mid),
+                            "is_free": is_free,
+                            "context_length": m.get("context_length", 4096)
+                        })
+                    return models_list
+        except Exception as e:
+            logger.debug(f"OpenRouter get_available_models error: {e}")
+        return []
+
+    async def fetch_live_free_models(self) -> List[str]:
+        """Discovers and caches active free models from OpenRouter."""
+        now = time.time()
+        if self._cached_live_models and (now - self._last_discovery_time < 600):
+            return self._cached_live_models
+
+        live_free: List[str] = []
+        try:
+            models_data = await self.get_available_models()
+            for m in models_data:
+                if m.get("is_free") and m.get("id"):
+                    live_free.append(m["id"])
+            if live_free:
+                self._cached_live_models = live_free
+                self._last_discovery_time = now
+                logger.info(f"OpenRouter dynamically discovered {len(live_free)} live free models.")
+        except Exception as e:
+            logger.debug(f"OpenRouter dynamic free models error: {e}")
+
+        return live_free or [
+            "inclusionai/ling-3.0-flash-fin:free",
+            "liquid/lfm-2.5-2.6b:free",
             "nvidia/nemotron-3.5-lightning:free",
-            "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "google/gemma-4-26b-a4b-it:free",
+            "google/gemma-4-31b-it:free",
             "minimax/minimax-m3:free",
             "z-ai/glm-5.2:free",
-            "liquid/lfm-2.5-2.6b:free",
-            "inclusionai/ling-3.0-flash-fin:free",
             "meta-llama/llama-3.1-8b-instruct:free",
-            "deepseek/deepseek-r1",
-            "meta-llama/llama-3.3-70b-instruct",
-            "google/gemini-2.5-flash",
-            "openai/gpt-4o-mini"
+            "openrouter/free"
         ]
-        for fm in fallback_models:
-            if fm not in configured_models:
-                configured_models.append(fm)
-        self.models = configured_models
 
     async def synthesize(self, structured_input: Dict[str, Any]) -> AISynthesisOutput:
         if not self.api_key:
@@ -44,6 +80,29 @@ class OpenRouterProvider(BaseAIProvider):
 
         url = "https://openrouter.ai/api/v1/chat/completions"
         prompt = generate_synthesis_prompt(structured_input)
+
+        # Build prioritized list: User configured models first, then dynamic live free models, then popular fallbacks
+        live_free = await self.fetch_live_free_models()
+        candidate_models = []
+
+        for m in self.models:
+            clean = m.strip()
+            if clean and clean not in candidate_models:
+                candidate_models.append(clean)
+
+        for fm in live_free:
+            if fm not in candidate_models:
+                candidate_models.append(fm)
+
+        popular_fallbacks = [
+            "deepseek/deepseek-r1",
+            "meta-llama/llama-3.3-70b-instruct",
+            "google/gemini-2.5-flash",
+            "openai/gpt-4o-mini"
+        ]
+        for pf in popular_fallbacks:
+            if pf not in candidate_models:
+                candidate_models.append(pf)
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -53,7 +112,7 @@ class OpenRouterProvider(BaseAIProvider):
         }
 
         last_error = None
-        for model in self.models:
+        for model in candidate_models:
             payload = {
                 "model": model,
                 "messages": [
@@ -61,13 +120,13 @@ class OpenRouterProvider(BaseAIProvider):
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.2,
-                "max_tokens": 1000,
+                "max_tokens": 1200,
                 "response_format": {"type": "json_object"}
             }
 
             try:
                 logger.info(f"Trying OpenRouter model '{model}'...")
-                async with httpx.AsyncClient(timeout=min(settings.AI_TIMEOUT_SECONDS, 15)) as client:
+                async with httpx.AsyncClient(timeout=min(settings.AI_TIMEOUT_SECONDS, 16)) as client:
                     response = await client.post(url, headers=headers, json=payload)
 
                 if response.status_code == 200:
@@ -79,14 +138,17 @@ class OpenRouterProvider(BaseAIProvider):
                         parsed = json.loads(clean_str)
                         logger.info(f"OpenRouter synthesis successfully generated via model '{model}'.")
                         return AISynthesisOutput(**parsed)
-                elif response.status_code == 404:
-                    logger.warning(f"OpenRouter model '{model}' not found / unavailable (404). Trying next model...")
+                elif response.status_code in [404, 400]:
+                    logger.warning(f"OpenRouter model '{model}' not found / unsupported ({response.status_code}). Switching to next model...")
+                    continue
                 elif response.status_code == 402:
-                    logger.warning(f"OpenRouter model '{model}' requires more credits (402). Trying next model...")
+                    logger.warning(f"OpenRouter model '{model}' requires credits (402). Switching to next free model...")
+                    continue
                 elif response.status_code == 429:
-                    logger.warning(f"OpenRouter model '{model}' hit rate limit (429). Trying next model...")
+                    logger.warning(f"OpenRouter model '{model}' hit rate limit (429). Switching to next model...")
+                    continue
                 else:
-                    logger.warning(f"OpenRouter model '{model}' failed ({response.status_code}): {response.text[:200]}")
+                    logger.warning(f"OpenRouter model '{model}' status {response.status_code}: {response.text[:150]}")
             except Exception as e:
                 logger.warning(f"OpenRouter model '{model}' exception: {e}")
                 last_error = e
@@ -95,10 +157,18 @@ class OpenRouterProvider(BaseAIProvider):
 
     def _clean_json(self, text: str) -> str:
         text = text.strip()
+        # Strip reasoning model think tags
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
         if text.startswith("```json"):
             text = text[7:]
         elif text.startswith("```"):
             text = text[3:]
         if text.endswith("```"):
             text = text[:-3]
-        return text.strip()
+        text = text.strip()
+        # If surrounded by text, find first { and last }
+        if "{" in text and "}" in text:
+            start_idx = text.find("{")
+            end_idx = text.rfind("}") + 1
+            text = text[start_idx:end_idx]
+        return text

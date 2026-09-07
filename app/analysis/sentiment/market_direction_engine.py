@@ -77,22 +77,22 @@ class MarketDirectionEngine:
                 elif (raw_score > 0 and score < -20.0) or (raw_score < 0 and score > 20.0):
                     contradictions.append(f"{name} opposes direction ({score:+.1f})")
 
-        # Conflict penalty
-        conflict_penalty = len(contradictions) * settings.EVIDENCE_CONFLICT_PENALTY
-        # Base confidence from magnitude of conviction
-        base_confidence = min(95.0, 45.0 + (abs(raw_score) * 0.5))
-        final_confidence = max(15.0, base_confidence - conflict_penalty)
+        # Proportional conflict penalty (5.0 per opposing pillar, capped at 15.0)
+        conflict_penalty = min(15.0, len(contradictions) * 5.0)
+        # Base confidence scales with directional conviction and data presence (60% to 95%)
+        base_confidence = min(95.0, 60.0 + (abs(raw_score) * 0.35))
+        final_confidence = max(45.0, base_confidence - conflict_penalty)
 
         # Determine directional label
-        if abs(raw_score) < 15.0 or (final_confidence < 30.0 and len(contradictions) >= 2):
+        if abs(raw_score) < 12.0:
             direction = "NEUTRAL"
-        elif raw_score >= 60.0:
+        elif raw_score >= 50.0:
             direction = "STRONGLY BULLISH"
-        elif raw_score >= 20.0:
+        elif raw_score >= 12.0:
             direction = "BULLISH"
-        elif raw_score <= -60.0:
+        elif raw_score <= -50.0:
             direction = "STRONGLY BEARISH"
-        elif raw_score <= -20.0:
+        elif raw_score <= -12.0:
             direction = "BEARISH"
         else:
             direction = "NEUTRAL"
@@ -100,12 +100,12 @@ class MarketDirectionEngine:
         # Dominant drivers selection
         sorted_by_abs = sorted(factors, key=lambda x: abs(x[1]), reverse=True)
         for name, score in sorted_by_abs[:3]:
-            if abs(score) >= 15.0:
+            if abs(score) >= 12.0:
                 bias_str = "supportive for gold" if score > 0 else "headwind for gold"
                 dominant_drivers.append(f"{name} ({score:+.1f}): {bias_str}")
 
         if not dominant_drivers:
-            dominant_drivers.append("Balanced neutral conditions across macro and technical inputs.")
+            dominant_drivers.append("Balanced conditions across macroeconomic and technical indicators.")
 
         return {
             "direction": direction,
