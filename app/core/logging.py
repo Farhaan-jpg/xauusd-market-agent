@@ -4,9 +4,9 @@ import re
 import sys
 from typing import Any, Dict
 
-# Regex pattern to match potential API keys or tokens in logs
+# Regex pattern to match genuine API keys, credentials, or tokens in logs
 SECRET_PATTERNS = [
-    re.compile(r'(?i)(key|token|secret|password|bearer|authorization)[:=\s]+(["\']?)([a-zA-Z0-9_\-\.]{8,})(["\']?)'),
+    re.compile(r'(?i)(api[_-]?key|bot[_-]?token|secret[_-]?key|password|bearer|auth[_-]?token|access[_-]?token)[:=\s]+(["\']?)([a-zA-Z0-9_\-\.]{12,})(["\']?)'),
 ]
 
 class SecretMaskingFormatter(logging.Formatter):
