@@ -199,11 +199,13 @@
             <button class="banner-close" id="btn-close-banner" aria-label="Dismiss">✕</button>
         </div>
 
-        <!-- MAIN NAVIGATION TABS (Mobile-friendly segmented bar) -->
-        <nav class="segment-tabs">
-            <button class="seg-btn active" data-tab="tab-overview">
+            <button class="seg-btn" data-tab="tab-overview">
                 <span class="seg-icon">🎯</span>
                 <span class="seg-text">Executive Verdict</span>
+            </button>
+            <button class="seg-btn" data-tab="tab-scalper">
+                <span class="seg-icon">⚡</span>
+                <span class="seg-text">Scalper Cockpit</span>
             </button>
             <button class="seg-btn" data-tab="tab-news">
                 <span class="seg-icon">📰</span>
@@ -223,6 +225,7 @@
                 <span class="seg-text">Catalysts</span>
             </button>
         </nav>
+
 
         <!-- MAIN DASHBOARD CONTENT AREA -->
         <main class="dashboard-main">
@@ -348,6 +351,96 @@
                     </div>
                 </div>
             </section>
+
+            <!-- ========================================================= -->
+            <!-- 2. SCALPER & DAY TRADING COCKPIT -->
+            <!-- ========================================================= -->
+            <section class="content-panel" id="tab-scalper">
+                <!-- Top Scalper Status Strip -->
+                <div class="hero-verdict-card" style="margin-bottom: 20px;">
+                    <div class="verdict-top-bar">
+                        <div class="verdict-label-group">
+                            <span class="eyebrow-tag">⚡ SCALPING & DAY TRADING RADAR</span>
+                            <div class="verdict-badge" id="scalp-regime-badge" style="background: rgba(14, 165, 233, 0.15); border-color: #0ea5e9; color: #38bdf8;">
+                                <span class="verdict-pulse-dot"></span>
+                                <span class="verdict-title" id="scalp-regime-title">REGIME: LOADING...</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="card-action-btn" id="btn-copy-pinescript" style="background: #1e293b; border-color: #f59e0b; color: #fbbf24; font-weight: 700;">
+                                📋 Copy Pine Script (v5)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Regime Adaptive Weight Meters -->
+                    <div style="margin-top: 15px; padding: 14px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
+                            <span>⚖️ <b>Adaptive Synthesis Weights</b>: <span id="scalp-weights-desc">50% Tech, 20% News, 15% Liq, 15% Macro</span></span>
+                            <span>Risk Guardian: <b id="scalp-risk-guardian" style="color: #10b981;">OPTIMAL (GREEN)</b></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-Column Scalper Grid -->
+                <div class="essentials-grid">
+                    <!-- Column 1: Actionable Trade Setups -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🎯</span>
+                                <h3>Actionable Trade Setup Cards</h3>
+                            </div>
+                            <span class="badge-tag" id="scalp-setups-count">LIVE SIGNALS</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="scalp-setups-container">
+                                <div class="empty-state-mini">Calculating multi-timeframe trade confluence...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: 4-Tier Confluence Matrix & ADR -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🔥</span>
+                                <h3>4-Tier Confluence Matrix</h3>
+                            </div>
+                            <span class="badge-tag" id="scalp-confluence-grade" style="color: #f59e0b; font-weight: 800;">GRADE: --</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="margin-bottom: 16px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
+                                    <span style="color: #94a3b8;">Confluence Alignment:</span>
+                                    <strong id="scalp-confluence-pct" style="color: #f59e0b;">0%</strong>
+                                </div>
+                                <div class="depth-ratio-track" style="height: 10px;">
+                                    <div class="depth-ratio-fill bid" id="scalp-confluence-bar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+
+                            <div class="aligned-factors-list" id="scalp-aligned-factors">
+                                <div class="empty-state-mini">Evaluating timeframe confluences...</div>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0;">
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
+                                <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.72rem;">5M VWAP DISTANCE</span>
+                                    <strong id="scalp-vwap-dist" style="color: #e2e8f0; font-size: 0.95rem;">--</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.72rem;">ADR EXHAUSTION</span>
+                                    <strong id="scalp-adr-exhaust" style="color: #e2e8f0; font-size: 0.95rem;">--</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
 
             <!-- ========================================================= -->
             <!-- 2. FULL LIVE NEWS STREAM & CATALYST RADAR -->

@@ -106,7 +106,7 @@ function setupAutoRefresh(seconds) {
 
 async function fetchFullDashboard() {
     try {
-        const [reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes] = await Promise.allSettled([
+        const [reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes, setupsRes, regimeRes] = await Promise.allSettled([
             fetch("/api/latest-report").then(r => r.json()),
             fetch("/api/market-data").then(r => r.json()),
             fetch("/api/news").then(r => r.json()),
@@ -114,7 +114,9 @@ async function fetchFullDashboard() {
             fetch("/api/liquidity").then(r => r.json()),
             fetch("/api/economic-calendar").then(r => r.json()),
             fetch("/api/geopolitics").then(r => r.json()),
-            fetch("/api/institutional-flow").then(r => r.json())
+            fetch("/api/institutional-flow").then(r => r.json()),
+            fetch("/api/setups").then(r => r.json()),
+            fetch("/api/regime").then(r => r.json())
         ]);
 
         if (reportRes.status === "fulfilled") updateExecutiveReport(reportRes.value);
@@ -125,6 +127,8 @@ async function fetchFullDashboard() {
         if (calRes.status === "fulfilled") updateCalendarData(calRes.value);
         if (geoRes.status === "fulfilled") updateGeopolitics(geoRes.value);
         if (cotRes.status === "fulfilled") updateInstitutionalFlow(cotRes.value);
+        if (setupsRes.status === "fulfilled") updateScalperSetups(setupsRes.value);
+        if (regimeRes.status === "fulfilled") updateScalperRegime(regimeRes.value);
 
     } catch (err) {
         console.error("Dashboard refresh error:", err);
@@ -844,6 +848,152 @@ function initActionButtons() {
         btnForceNews.addEventListener("click", () => {
             btnSync?.click();
         });
+    }
+
+    const btnPine = document.getElementById("btn-copy-pinescript");
+    if (btnPine) {
+        btnPine.addEventListener("click", async () => {
+            try {
+                const res = await fetch("/api/pine-script");
+                if (res.ok) {
+                    const text = await res.text();
+                    await navigator.clipboard.writeText(text);
+                    showToast("📋 Pine Script v5 copied to clipboard! Paste into TradingView Pine Editor.");
+                } else {
+                    showToast("⚠️ Could not generate Pine Script.");
+                }
+            } catch (e) {
+                showToast("❌ Clipboard error copying script.");
+            }
+        });
+    }
+}
+
+/* ==============================================================================
+   5B. SCALPER & DAY TRADING SUITE UPDATERS
+   ============================================================================== */
+function updateScalperRegime(data) {
+    if (!data || !data.regime) return;
+    const r = data.regime;
+    const badge = document.getElementById("scalp-regime-badge");
+    const title = document.getElementById("scalp-regime-title");
+    if (badge && title) {
+        title.textContent = `REGIME: ${r.regime ? r.regime.replace(/_/g, " ") : "TRENDING EXPANSION"}`;
+    }
+    const weightsDesc = document.getElementById("scalp-weights-desc");
+    if (weightsDesc && r.weights) {
+        const w = r.weights;
+        weightsDesc.textContent = `${Math.round((w.technical || 0.4)*100)}% Tech, ${Math.round((w.news || 0.2)*100)}% News, ${Math.round((w.liquidity || 0.25)*100)}% Liq, ${Math.round((w.macro || 0.15)*100)}% Macro`;
+    }
+}
+
+function updateScalperSetups(data) {
+    if (!data) return;
+    
+    // Confluence update if attached
+    if (data.confluence) {
+        updateScalperConfluence(data.confluence);
+    }
+    // Risk guardian update if attached
+    if (data.risk_guardian) {
+        const rgEl = document.getElementById("scalp-risk-guardian");
+        if (rgEl) {
+            const cond = data.risk_guardian.risk_condition || "NORMAL";
+            rgEl.textContent = `${cond} (${Math.round(data.risk_guardian.adr_exhaustion_pct || 0)}% ADR)`;
+            rgEl.style.color = cond === "CHOP_RISK" || cond === "EXHAUSTED" ? "#f43f5e" : "#10b981";
+        }
+        const adrEl = document.getElementById("scalp-adr-exhaust");
+        if (adrEl) {
+            adrEl.textContent = `${data.risk_guardian.adr_exhaustion_pct || 0}% (${data.risk_guardian.distance_to_adr_boundary_pts || 0} pts left)`;
+        }
+    }
+
+    const setups = data.setups || [];
+    const container = document.getElementById("scalp-setups-container");
+    const countEl = document.getElementById("scalp-setups-count");
+    if (countEl) countEl.textContent = `${setups.length} ACTIVE SETUP${setups.length === 1 ? '' : 'S'}`;
+
+    if (!container) return;
+
+    if (setups.length === 0) {
+        container.innerHTML = `<div class="empty-state-mini">No high-probability trade setups active under current market regime. Capital preservation in effect.</div>`;
+        return;
+    }
+
+    container.innerHTML = setups.map(s => {
+        const isLong = s.direction === "LONG";
+        const gradeColor = s.quality_grade === "A+" ? "#10b981" : s.quality_grade === "A" ? "#38bdf8" : "#f59e0b";
+        
+        return `
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid ${isLong ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}; border-left: 4px solid ${isLong ? '#10b981' : '#f43f5e'}; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="background: ${isLong ? 'rgba(16,185,129,0.2)' : 'rgba(244,63,94,0.2)'}; color: ${isLong ? '#34d399' : '#fb7185'}; font-weight: 800; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px;">${s.direction}</span>
+                        <strong style="color: #ffffff; font-size: 0.9rem;">${escapeHtml(s.setup_name || s.setup_type)}</strong>
+                    </div>
+                    <span style="font-weight: 800; color: ${gradeColor}; font-size: 0.8rem; background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; border: 1px solid ${gradeColor};">Grade: ${s.quality_grade}</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 10px 0; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; font-size: 0.75rem; font-family: var(--font-mono);">
+                    <div>
+                        <span style="color: #94a3b8; display: block; font-size: 0.65rem;">ENTRY</span>
+                        <b style="color: #38bdf8;">$${s.entry_zone ? s.entry_zone[0] : s.entry_price}</b>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; display: block; font-size: 0.65rem;">STOP LOSS</span>
+                        <b style="color: #f43f5e;">$${s.invalidation_sl}</b>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; display: block; font-size: 0.65rem;">TP1 [1:1.5]</span>
+                        <b style="color: #34d399;">$${s.target_tp1}</b>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; display: block; font-size: 0.65rem;">R:R</span>
+                        <b style="color: #fbbf24;">1:${s.reward_risk_ratio || 2.0}</b>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.75rem; color: #cbd5e1; line-height: 1.4;">
+                    <span>⚡ <b>Catalyst:</b> ${escapeHtml(s.catalyst || s.invalidation_reason || "Confluence alignment confirmed.")}</span>
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function updateScalperConfluence(conf) {
+    if (!conf) return;
+    const gradeEl = document.getElementById("scalp-confluence-grade");
+    if (gradeEl) {
+        gradeEl.textContent = `GRADE: ${conf.confluence_grade || '--'}`;
+        gradeEl.style.color = conf.confluence_grade === "A+" ? "#10b981" : conf.confluence_grade === "A" ? "#38bdf8" : "#f59e0b";
+    }
+
+    const pctEl = document.getElementById("scalp-confluence-pct");
+    const barEl = document.getElementById("scalp-confluence-bar");
+    const pct = conf.confluence_score !== undefined ? conf.confluence_score : (conf.confluence_pct || 0);
+    if (pctEl) pctEl.textContent = `${pct}%`;
+    if (barEl) barEl.style.width = `${pct}%`;
+
+    const factorsEl = document.getElementById("scalp-aligned-factors");
+    if (factorsEl) {
+        const aligned = conf.aligned_factors || [];
+        if (aligned.length === 0) {
+            factorsEl.innerHTML = `<div class="empty-state-mini">Evaluating market factors...</div>`;
+        } else {
+            factorsEl.innerHTML = aligned.map(f => `
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #e2e8f0; margin-bottom: 5px;">
+                    <span style="color: #10b981;">✓</span>
+                    <span>${escapeHtml(f)}</span>
+                </div>
+            `).join("");
+        }
+    }
+
+    const vwapEl = document.getElementById("scalp-vwap-dist");
+    if (vwapEl && conf.factors && conf.factors.vwap_5m) {
+        vwapEl.textContent = conf.factors.vwap_5m.aligned ? "Above VWAP (Bullish)" : "Below VWAP (Bearish)";
+        vwapEl.style.color = conf.factors.vwap_5m.aligned ? "#10b981" : "#f43f5e";
     }
 }
 

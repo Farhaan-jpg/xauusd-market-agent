@@ -922,4 +922,138 @@ async def telegram_webhook(request: Request, background_tasks: BackgroundTasks) 
         logger.error(f"Telegram webhook processing error: {e}")
         return {"status": "error", "message": str(e)}
 
+@app.get("/api/setups")
+async def get_actionable_setups() -> Dict[str, Any]:
+    """Returns risk-defined actionable scalp & day-trade setup cards."""
+    from app.analysis.trade_setups.setup_generator import TradeSetupGenerator
+    from app.analysis.confluence.confluence_engine import ConfluenceMatrixEngine
+    from app.analysis.risk.risk_guardian import RiskGuardian
+
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+    
+    zones = await Repository.get_active_liquidity_zones()
+    above = [{"price": z.price, "zone_type": z.zone_type, "strength": z.strength} for z in zones if z.price > price]
+    below = [{"price": z.price, "zone_type": z.zone_type, "strength": z.strength} for z in zones if z.price <= price]
+    
+    confluence_data = ConfluenceMatrixEngine.evaluate_confluence(
+        market_analysis={"technical_score": latest.technical_score if latest else 0.0, "trend": snapshot.trend if snapshot else "NEUTRAL", "scalp_bias": latest.direction if latest else "BULLISH", "day_trade_bias": latest.direction if latest else "BULLISH", "vwap_5m": price - 1.0, "market_structure": "BULLISH_ORDERFLOW" if latest and latest.technical_score > 0 else "BEARISH_ORDERFLOW"},
+        liquidity_analysis={"active_sweeps": []},
+        cvd_analysis={"cvd_bias": "BULLISH" if latest and latest.technical_score > 0 else "BEARISH", "delta_divergence": "NONE"},
+        current_price=price
+    )
+    
+    setups = TradeSetupGenerator.generate_setups(
+        current_price=price,
+        direction=latest.direction if latest else "BULLISH",
+        confluence_data=confluence_data,
+        liquidity_data={"liquidity_above": above, "liquidity_below": below, "active_sweeps": []},
+        market_analysis={"vwap_5m": price - 1.0},
+        atr=snapshot.atr if snapshot and snapshot.atr > 0 else 8.5
+    )
+    
+    risk_data = RiskGuardian.evaluate_risk(
+        day_high=snapshot.high_24h if snapshot else price + 10.0,
+        day_low=snapshot.low_24h if snapshot else price - 10.0,
+        current_price=price,
+        adr=24.5,
+        atr_5m=snapshot.atr / 3.0 if snapshot and snapshot.atr > 0 else 2.5
+    )
+
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "confluence": confluence_data,
+        "risk_guardian": risk_data,
+        "setups": setups
+    }
+
+@app.get("/api/confluence")
+async def get_confluence() -> Dict[str, Any]:
+    """Returns 4-tier multi-timeframe confluence matrix and setup grade."""
+    from app.analysis.confluence.confluence_engine import ConfluenceMatrixEngine
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+
+    confluence_data = ConfluenceMatrixEngine.evaluate_confluence(
+        market_analysis={"technical_score": latest.technical_score if latest else 0.0, "trend": snapshot.trend if snapshot else "NEUTRAL", "scalp_bias": latest.direction if latest else "BULLISH", "day_trade_bias": latest.direction if latest else "BULLISH", "vwap_5m": price - 1.0, "market_structure": "BULLISH_ORDERFLOW" if latest and latest.technical_score > 0 else "BEARISH_ORDERFLOW"},
+        liquidity_analysis={"active_sweeps": []},
+        cvd_analysis={"cvd_bias": "BULLISH", "delta_divergence": "NONE"},
+        current_price=price
+    )
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "confluence": confluence_data
+    }
+
+@app.get("/api/regime")
+async def get_regime() -> Dict[str, Any]:
+    """Returns active market regime and dynamic weight distribution."""
+    from app.analysis.regime.regime_classifier import MarketRegimeClassifier
+    from app.analysis.liquidity.session_calculator import SessionCalculator
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+    kz_status = SessionCalculator.get_ict_killzone_status()
+
+    regime_data = MarketRegimeClassifier.classify_regime(
+        trend=snapshot.trend if snapshot else "NEUTRAL",
+        volatility=snapshot.volatility if snapshot else "NORMAL",
+        market_structure="BULLISH_ORDERFLOW" if latest and latest.technical_score > 0 else "BEARISH_ORDERFLOW",
+        killzone=kz_status.get("active_killzone", "OFF_HOURS"),
+        is_news_lockout=False
+    )
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "regime": regime_data
+    }
+
+@app.get("/api/pine-script")
+async def get_pine_script():
+    """Generates and returns ready-to-paste TradingView Pine Script v5 code."""
+    from app.tools.pinescript_generator import PineScriptGenerator
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+    zones = await Repository.get_active_liquidity_zones()
+    above = [{"price": z.price, "zone_type": z.zone_type} for z in zones if z.price > price]
+    below = [{"price": z.price, "zone_type": z.zone_type} for z in zones if z.price <= price]
+
+    script = PineScriptGenerator.generate_script(
+        current_price=price,
+        direction=latest.direction if latest else "BULLISH",
+        score=latest.direction_score if latest else 25.0,
+        liquidity_above=above,
+        liquidity_below=below,
+        asian_high=snapshot.high_24h if snapshot else 0.0,
+        asian_low=snapshot.low_24h if snapshot else 0.0
+    )
+    return Response(content=script, media_type="text/plain")
+
+@app.get("/api/metals-matrix")
+async def get_metals_matrix() -> Dict[str, Any]:
+    """Returns Gold/Silver Ratio (GSR), Silver leading signal, and Energy metrics."""
+    from app.analysis.intermarket.metals_matrix import IntermarketMetalsMatrix
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2700.0
+    change = snapshot.change_24h if snapshot else 0.0
+    
+    matrix = IntermarketMetalsMatrix.analyze_metals_matrix(
+        gold_price=price,
+        gold_change_pct=change,
+        silver_price=31.80,
+        silver_change_pct=change + 0.4,
+        crude_oil_price=71.50,
+        crude_oil_change_pct=0.8
+    )
+    return {
+        "status": "SUCCESS",
+        "matrix": matrix
+    }
+
+
 

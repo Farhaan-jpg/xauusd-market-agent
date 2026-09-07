@@ -40,6 +40,7 @@ class MarketDirectionEngine:
         liq_above = liquidity_analysis.get("liquidity_above", [])
         liq_below = liquidity_analysis.get("liquidity_below", [])
         order_flow_bias = liquidity_analysis.get("order_flow_bias", "")
+        cvd_delta_score = market_analysis.get("cvd_delta_score", 0.0)
         liq_score = 0.0
         
         if order_flow_bias == "BEARISH_ORDER_FLOW":
@@ -52,20 +53,29 @@ class MarketDirectionEngine:
         elif liq_above and (not liq_below or liq_above[0]["strength"] > liq_below[0]["strength"]):
             liq_score -= 15.0  # Strong overhead resistance cluster above
 
-        liq_score = max(-100.0, min(100.0, liq_score))
+        liq_score = max(-100.0, min(100.0, liq_score + (cvd_delta_score * 0.3)))
 
-        # Rebalanced Weighted Synthesis Optimized for Day Trading & Scalping:
-        # Technical Price Action (50%), Real-Time News (20%), Intraday Liquidity/Order-Flow (15%), Macro Backdrop (15%)
+        # Dynamic Regime-Adaptive Pillar Weighting
+        from app.analysis.regime.regime_classifier import MarketRegimeClassifier
+        regime_data = MarketRegimeClassifier.classify_regime(
+            trend=market_analysis.get("trend", "NEUTRAL"),
+            volatility=market_analysis.get("volatility", "NORMAL"),
+            market_structure=market_analysis.get("market_structure", "RANGING"),
+            killzone=liquidity_analysis.get("killzone", {}).get("active_killzone", "OFF_HOURS") if isinstance(liquidity_analysis.get("killzone"), dict) else str(liquidity_analysis.get("killzone", "OFF_HOURS")),
+            is_news_lockout=macro_analysis.get("is_news_lockout", False)
+        )
+        w = regime_data.get("weights", {"technical": 0.50, "news": 0.20, "liquidity": 0.15, "macro": 0.15})
+        
+        macro_combined = (macro_score * 0.4) + (usd_score * 0.3) + (yield_score * 0.3)
         raw_score = (
-            (tech_score * 0.50) +
-            (news_score * 0.20) +
-            (liq_score * 0.15) +
-            (macro_score * 0.05) +
-            (usd_score * 0.05) +
-            (yield_score * 0.05)
+            (tech_score * w.get("technical", 0.50)) +
+            (news_score * w.get("news", 0.20)) +
+            (liq_score * w.get("liquidity", 0.15)) +
+            (macro_combined * w.get("macro", 0.15))
         )
 
         raw_score = max(-100.0, min(100.0, raw_score))
+
 
         # Check for contradictions between key pillars
         contradictions = []

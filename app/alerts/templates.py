@@ -416,19 +416,113 @@ Status: {status_badge}
 
     @staticmethod
     def help_command_response() -> str:
-        return """🤖 <b>XAUUSD MARKET AGENT - INTERACTIVE RADAR</b>
+        return """🤖 <b>XAUUSD MARKET AGENT - INTERACTIVE COMMAND RADAR</b>
 ━━━━━━━━━━━━━━━━━━━━
-Available Commands:
-• <b>/scalp</b> - Real-time 5M/15M scalping & day trade bias, VWAP, SuperTrend & structure
-• <b>/levels</b> - Buy-side (BSL) & sell-side (SSL) liquidity pools, orderblocks & intraday levels
-• <b>/killzone</b> - Current ICT Killzone window status, Judas swing alerts & schedule
-• <b>/dxy</b> - US Dollar Index (DXY) & 10Y Yield correlation divergence engine
-• <b>/verdict</b> - Full institutional executive market direction & intelligence report
-• <b>/news</b> - Real-time breaking high-impact headlines with recency weighting
+⚡ <b>Actionable Execution Commands:</b>
+• <b>/setups</b> - Risk-defined scalp cards (Entry, SL, TP1, TP2, R:R)
+• <b>/confluence</b> - 4-Tier Multi-Timeframe Alignment & Grade (A+, A, B)
+• <b>/scalp</b> - Real-time 5M/15M bias, VWAP status, SuperTrend & structure
+• <b>/levels</b> - Buy-Side (BSL) & Sell-Side (SSL) liquidity order pools
+• <b>/killzone</b> - Active ICT window, Judas sweep alerts & session countdowns
+• <b>/regime</b> - Active market state (Trending / Range / News Shock) & dynamic weights
+• <b>/dxy</b> - US Dollar Index (DXY) & 10Y Yield divergence engine
+• <b>/verdict</b> - Complete institutional executive market report
+• <b>/news</b> - Real-time breaking headlines with recency weighting
+• <b>/pinescript</b> - Copy ready-to-paste TradingView Pine Script v5 code
 • <b>/help</b> - Show this command list
 
 ━━━━━━━━━━━━━━━━━━━━
 <i>Tip: Webhook signals from TradingView are automatically relayed to this channel.</i>""".strip()
+
+    @staticmethod
+    def setups_command_response(setups: list, current_price: float, adr_status: dict = None) -> str:
+        esc = TelegramBot.escape
+        if not setups:
+            return f"""🎯 <b>XAUUSD INTRADAY TRADE SETUPS RADAR</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Current Spot:</b> ${current_price:.2f}
+⚠️ <b>Status:</b> <b>NO_TRADE / WAIT FOR CONFLUENCE</b>
+No high-probability A+/A grade setup currently active. Market is either in compressed chop or awaiting session catalyst."""
+
+        cards = []
+        for s in setups:
+            act_emoji = "🟢" if "BUY" in s["action"] or "LONG" in s["action"] else "🔴"
+            grade_badge = f"🏆 <b>GRADE: {s['grade']}</b> ({s.get('confluence_score', 80)}% Confluence)"
+            card = f"""{act_emoji} <b>{esc(s['setup_name'].upper())}</b>
+{grade_badge}
+• <b>Action:</b> <b>{esc(s['action'])}</b>
+• <b>Entry Zone:</b> <b>{esc(s['entry_zone'])}</b>
+• 🛑 <b>Invalidation (SL):</b> <b>${s['invalidation_sl']:.2f}</b> ({s['sl_pips']} pips)
+• 🎯 <b>Take Profit 1:</b> <b>${s['take_profit_1']:.2f}</b> (+{s['tp1_pips']} pips)
+• 🚀 <b>Take Profit 2:</b> <b>${s['take_profit_2']:.2f}</b>
+• ⚖️ <b>Risk-to-Reward:</b> <b>{esc(s['risk_reward_ratio'])}</b>
+• 🔑 <b>Catalyst:</b> <i>{esc(s.get('catalyst', 'Confluence'))}</i>"""
+            cards.append(card)
+
+        adr_info = ""
+        if adr_status:
+            adr_info = f"\n━━━━━━━━━━━━━━━━━━━━\n🛡 <b>Risk Guardian:</b> {esc(adr_status.get('status_label', 'OPTIMAL'))} ({adr_status.get('adr_exhaustion_pct', 0):.0f}% ADR used)"
+
+        return f"""🎯 <b>XAUUSD INTRADAY ACTIONABLE TRADE SETUPS</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Current Spot:</b> ${current_price:.2f}
+
+""" + "\n\n━━━━━━━━━━━━━━━━━━━━\n".join(cards) + f"""{adr_info}
+━━━━━━━━━━━━━━━━━━━━
+<i>⚡ Strict risk management: Always risk &le; 1-2% per trade setup.</i>""".strip()
+
+    @staticmethod
+    def confluence_command_response(confluence_data: dict, current_price: float) -> str:
+        esc = TelegramBot.escape
+        grade = confluence_data.get("setup_grade", "B")
+        bias = confluence_data.get("confluence_bias", "NEUTRAL")
+        score = confluence_data.get("confluence_score", 50)
+        actionability = confluence_data.get("actionability", "")
+        
+        grade_emoji = "🔥" if grade == "A+" else "🟢" if grade == "A" else "🟡" if grade == "B" else "⚪"
+        
+        factors_str = ""
+        for f in confluence_data.get("aligned_factors", []):
+            factors_str += f"\n  ✅ {esc(f)}"
+        if not factors_str: factors_str = "\n  • Conflicting signals across lower/higher timeframes"
+
+        return f"""{grade_emoji} <b>MULTI-TIMEFRAME CONFLUENCE MATRIX</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Spot Price:</b> ${current_price:.2f}
+🎯 <b>Confluence Bias:</b> <b>{esc(bias)}</b>
+🏆 <b>Setup Grade:</b> <b>{grade}</b> ({score}% Alignment)
+📊 <b>Actionability:</b> <b>{esc(actionability.replace('_', ' '))}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>🔑 ALIGNED INSTITUTIONAL PILLARS:</b>{factors_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>4-Tier Multi-Timeframe Institutional Confluence (1H + 15M + 5M + VWAP).</i>""".strip()
+
+    @staticmethod
+    def regime_command_response(regime_data: dict, current_price: float) -> str:
+        esc = TelegramBot.escape
+        regime = regime_data.get("regime", "MEAN_REVERSION_RANGE")
+        desc = regime_data.get("description", "")
+        weights = regime_data.get("weights", {})
+
+        return f"""🏛 <b>MARKET REGIME & DYNAMIC WEIGHTING ENGINE</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Current Spot:</b> ${current_price:.2f}
+🏷 <b>Active Regime:</b> <b>{esc(regime.replace('_', ' '))}</b>
+
+📝 <b>Regime Profile:</b>
+{esc(desc)}
+━━━━━━━━━━━━━━━━━━━━
+<b>⚖️ ADAPTIVE SYNTHESIS WEIGHTS:</b>
+• Technical Price Action: <b>{weights.get('technical', 0.50)*100:.0f}%</b>
+• Real-Time News & Geopolitics: <b>{weights.get('news', 0.20)*100:.0f}%</b>
+• Liquidity & Order Flow: <b>{weights.get('liquidity', 0.15)*100:.0f}%</b>
+• Macro Backdrop: <b>{weights.get('macro', 0.15)*100:.0f}%</b>
+━━━━━━━━━━━━━━━━━━━━
+<i>Dynamic institutional regime adaptation logic.</i>""".strip()
 
     @staticmethod
     def tradingview_webhook_alert(
@@ -472,5 +566,6 @@ Available Commands:
 High probability of institutional slippage, spread expansion, and two-way stop hunting. Caution is advised for tight scalp setups until 15 minutes post-release.
 ━━━━━━━━━━━━━━━━━━━━
 <i>Institutional volatility protection protocol.</i>""".strip()
+
 
 
