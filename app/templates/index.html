@@ -138,8 +138,12 @@
                         </div>
                     </div>
 
-                    <!-- Executive Narrative -->
+                    <!-- Executive Narrative & Actionable Posture Flag -->
                     <div class="verdict-narrative-box">
+                        <div class="action-posture-badge wait" id="hero-action-posture">
+                            <span class="posture-icon" id="hero-posture-icon">⏳</span>
+                            <span class="posture-text" id="hero-posture-text">EVALUATING ACTIONABLE MARKET REGIME...</span>
+                        </div>
                         <p class="verdict-narrative-text" id="hero-verdict-summary">
                             Synthesizing live macroeconomic yield curves, order-flow liquidity pools, and breaking news catalysts...
                         </p>
@@ -378,7 +382,7 @@
             </section>
 
             <!-- ========================================================= -->
-            <!-- 4. INSTITUTIONAL LIQUIDITY RADAR & DEPTH LADDER -->
+            <!-- 4. INSTITUTIONAL LIQUIDITY RADAR & MULTI-CHART SUITE -->
             <!-- ========================================================= -->
             <section class="content-panel" id="tab-chart">
                 <div class="liquidity-radar-card">
@@ -387,48 +391,118 @@
                             <span class="panel-icon">🌊</span>
                             <div>
                                 <h2>Institutional Order-Flow Liquidity Radar</h2>
-                                <p class="panel-subtitle">Real-time supply/demand clusters, stop-hunt pools, and liquidity depth ladder</p>
+                                <p class="panel-subtitle">Horizontal depth profile, vertical multi-timeframe zone radar, and DOM order-flow ladder</p>
                             </div>
                         </div>
-                        <div class="orderflow-bias-pill" id="liq-orderflow-bias">
-                            <span class="dot-green"></span>
-                            <span id="liq-orderflow-text">BULLISH ORDER-FLOW</span>
+                        <div class="head-controls-group">
+                            <div class="orderflow-bias-pill" id="liq-orderflow-bias">
+                                <span class="dot-green"></span>
+                                <span id="liq-orderflow-text">BULLISH ORDER-FLOW</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- VERTICAL LIQUIDITY DEPTH LADDER -->
-                    <div class="liquidity-depth-ladder">
-                        <!-- OVERHEAD SUPPLY / RESISTANCE POOLS -->
-                        <div class="ladder-section supply-section">
-                            <div class="ladder-section-header">
-                                <span class="badge-supply">🔴 OVERHEAD SUPPLY & BUY-SIDE STOP POOLS (RESISTANCE)</span>
-                                <span class="ladder-hint">Equal Highs • Liquidity Sweep Targets</span>
+                    <!-- RADAR VIEW SUB-NAVIGATION -->
+                    <div class="radar-view-nav">
+                        <button class="radar-sub-btn active" id="btn-view-horizontal" data-view="view-horizontal">
+                            <span>📊</span> Horizontal Depth Profile
+                        </button>
+                        <button class="radar-sub-btn" id="btn-view-vertical" data-view="view-vertical">
+                            <span>📈</span> Vertical Candlestick & Zone Radar
+                        </button>
+                        <button class="radar-sub-btn" id="btn-view-ladder" data-view="view-ladder">
+                            <span>🪜</span> Order-Flow Depth Ladder
+                        </button>
+                    </div>
+
+                    <!-- VIEW 1: HORIZONTAL LIQUIDITY DEPTH PROFILE (DEFAULT) -->
+                    <div class="radar-view-panel active" id="view-horizontal">
+                        <div class="depth-ratio-bar-wrap">
+                            <div class="depth-ratio-labels">
+                                <span class="ratio-side bid">🟢 Resting Bid / Demand: <b id="liq-bid-pct">54%</b></span>
+                                <span class="ratio-center" id="liq-imbalance-ratio-tag">Institutional Net Accumulation</span>
+                                <span class="ratio-side ask">🔴 Overhead Ask / Supply: <b id="liq-ask-pct">46%</b></span>
                             </div>
-                            <div class="ladder-items-list" id="ladder-supply-items">
-                                <div class="empty-state-mini">Analyzing overhead liquidity...</div>
+                            <div class="depth-ratio-track">
+                                <div class="depth-ratio-fill bid" id="liq-bid-fill" style="width: 54%;"></div>
+                                <div class="depth-ratio-fill ask" id="liq-ask-fill" style="width: 46%;"></div>
                             </div>
                         </div>
 
-                        <!-- 📍 LIVE SPOT PRICE PIN / ANCHOR -->
-                        <div class="ladder-spot-anchor">
-                            <div class="anchor-glow-line"></div>
-                            <div class="anchor-badge">
-                                <span class="anchor-icon">⚜️</span>
-                                <span class="anchor-label">CURRENT SPOT:</span>
-                                <span class="anchor-price" id="ladder-spot-price">$--.--</span>
-                                <span class="anchor-tag" id="ladder-spread-tag">Active Auction Level</span>
+                        <!-- Horizontal Liquidity Volume-by-Price Canvas Container -->
+                        <div class="chart-canvas-container">
+                            <div class="chart-canvas-header">
+                                <span class="chart-canvas-title">Order-Flow Concentration & Liquidity Distribution ($4,350 — $4,460)</span>
+                                <span class="chart-canvas-hint">Hover bars to inspect resting limit clusters</span>
                             </div>
-                            <div class="anchor-glow-line"></div>
+                            <div class="horizontal-profile-wrapper" id="horizontal-profile-chart">
+                                <div class="loading-spinner-box">
+                                    <div class="spinner"></div>
+                                    <span>Rendering institutional volume & depth profile...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 2: VERTICAL CANDLESTICK & LIQUIDITY ZONE RADAR -->
+                    <div class="radar-view-panel" id="view-vertical">
+                        <div class="vertical-chart-toolbar">
+                            <div class="tf-selector-group">
+                                <span class="tf-lbl">Timeframe:</span>
+                                <button class="tf-btn" data-tf="M5">M5</button>
+                                <button class="tf-btn" data-tf="M15">M15</button>
+                                <button class="tf-btn active" data-tf="H1">H1</button>
+                                <button class="tf-btn" data-tf="H4">H4</button>
+                                <button class="tf-btn" data-tf="D1">D1</button>
+                            </div>
+                            <div class="chart-legend-mini">
+                                <span class="legend-chip supply"><span class="chip-dot red"></span> Supply / FVG Resistance</span>
+                                <span class="legend-chip demand"><span class="chip-dot green"></span> Demand / FVG Support</span>
+                                <span class="legend-chip spot"><span class="chip-dot gold"></span> Live Spot Laser</span>
+                            </div>
                         </div>
 
-                        <!-- RESTING DEMAND / SUPPORT POOLS -->
-                        <div class="ladder-section demand-section">
-                            <div class="ladder-section-header">
-                                <span class="badge-demand">🟢 RESTING DEMAND & SELL-SIDE STOP POOLS (SUPPORT)</span>
-                                <span class="ladder-hint">Order Blocks • Fair Value Gap Defense</span>
+                        <div class="chart-canvas-container vertical-canvas-box">
+                            <canvas id="vertical-candle-canvas" width="900" height="380"></canvas>
+                            <div class="canvas-tooltip" id="candle-tooltip" style="display: none;"></div>
+                        </div>
+                    </div>
+
+                    <!-- VIEW 3: GRANULAR ORDER-FLOW DEPTH LADDER (DOM) -->
+                    <div class="radar-view-panel" id="view-ladder">
+                        <div class="liquidity-depth-ladder">
+                            <!-- OVERHEAD SUPPLY / RESISTANCE POOLS -->
+                            <div class="ladder-section supply-section">
+                                <div class="ladder-section-header">
+                                    <span class="badge-supply">🔴 OVERHEAD SUPPLY & BUY-SIDE STOP POOLS (RESISTANCE)</span>
+                                    <span class="ladder-hint">Equal Highs • Liquidity Sweep Targets</span>
+                                </div>
+                                <div class="ladder-items-list" id="ladder-supply-items">
+                                    <div class="empty-state-mini">Analyzing overhead liquidity...</div>
+                                </div>
                             </div>
-                            <div class="ladder-items-list" id="ladder-demand-items">
-                                <div class="empty-state-mini">Analyzing resting demand pools...</div>
+
+                            <!-- 📍 LIVE SPOT PRICE PIN / ANCHOR -->
+                            <div class="ladder-spot-anchor">
+                                <div class="anchor-glow-line"></div>
+                                <div class="anchor-badge">
+                                    <span class="anchor-icon">⚜️</span>
+                                    <span class="anchor-label">CURRENT SPOT:</span>
+                                    <span class="anchor-price" id="ladder-spot-price">$--.--</span>
+                                    <span class="anchor-tag" id="ladder-spread-tag">Active Auction Level</span>
+                                </div>
+                                <div class="anchor-glow-line"></div>
+                            </div>
+
+                            <!-- RESTING DEMAND / SUPPORT POOLS -->
+                            <div class="ladder-section demand-section">
+                                <div class="ladder-section-header">
+                                    <span class="badge-demand">🟢 RESTING DEMAND & SELL-SIDE STOP POOLS (SUPPORT)</span>
+                                    <span class="ladder-hint">Order Blocks • Fair Value Gap Defense</span>
+                                </div>
+                                <div class="ladder-items-list" id="ladder-demand-items">
+                                    <div class="empty-state-mini">Analyzing resting demand pools...</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -436,19 +510,28 @@
                     <!-- 3-COLUMN LIQUIDITY INTELLIGENCE METRICS -->
                     <div class="liquidity-intel-grid">
                         <div class="liq-intel-box">
-                            <span class="intel-lbl">Immediate Resistance</span>
+                            <span class="intel-lbl">Immediate Overhead Resistance</span>
                             <span class="intel-val color-red" id="liq-imm-res">$----.--</span>
                             <span class="intel-sub" id="liq-res-dist">Analyzing...</span>
                         </div>
                         <div class="liq-intel-box">
-                            <span class="intel-lbl">Order-Flow Imbalance</span>
+                            <span class="intel-lbl">Order-Flow Imbalance Ratio</span>
                             <span class="intel-val color-green" id="liq-imbalance-val">Balanced</span>
                             <span class="intel-sub" id="liq-imbalance-sub">Institutional Accumulation</span>
                         </div>
                         <div class="liq-intel-box">
-                            <span class="intel-lbl">Immediate Support</span>
+                            <span class="intel-lbl">Immediate Underlying Support</span>
                             <span class="intel-val color-green" id="liq-imm-sup">$----.--</span>
                             <span class="intel-sub" id="liq-sup-dist">Analyzing...</span>
+                        </div>
+                    </div>
+
+                    <!-- METHODOLOGY & TRANSPARENCY NOTICE -->
+                    <div class="methodology-notice-banner">
+                        <span class="notice-icon">ℹ️</span>
+                        <div class="notice-body">
+                            <span class="notice-title">QUANTITATIVE MARKET STRUCTURE & ORDER-FLOW MODEL</span>
+                            <span class="notice-desc">Liquidity pools and Fair Value Gaps (FVG) are algorithmically computed from multi-timeframe swing extremes (PDH/PDL, PWH/PWL), session imbalances, and institutional order blocks. Non-directional quantitative research.</span>
                         </div>
                     </div>
                 </div>

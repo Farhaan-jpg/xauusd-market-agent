@@ -625,6 +625,40 @@ body {
     line-height: 1.2;
 }
 
+/* Actionable Tactical Posture Badge */
+.action-posture-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+.action-posture-badge.wait {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    color: #fbbf24;
+}
+.action-posture-badge.long {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #34d399;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+}
+.action-posture-badge.short {
+    background: rgba(244, 63, 94, 0.15);
+    border: 1px solid rgba(244, 63, 94, 0.4);
+    color: #fb7185;
+    box-shadow: 0 0 15px rgba(244, 63, 94, 0.15);
+}
+.posture-icon {
+    font-size: 0.95rem;
+}
+
 /* Verdict Narrative */
 .verdict-narrative-box {
     padding: 12px 14px;
@@ -1251,7 +1285,7 @@ body {
 
 
 /* ==============================================================================
-   4. INSTITUTIONAL LIQUIDITY RADAR & DEPTH LADDER
+   4. INSTITUTIONAL LIQUIDITY RADAR & MULTI-CHART SUITE
    ============================================================================== */
 .liquidity-radar-card {
     background: var(--bg-card);
@@ -1280,7 +1314,385 @@ body {
     color: #fda4af;
 }
 
-/* Vertical Liquidity Depth Ladder */
+/* Radar Sub Navigation Switcher */
+.radar-view-nav {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+}
+
+.radar-sub-btn {
+    flex: 1;
+    min-width: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.radar-sub-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.04);
+}
+.radar-sub-btn.active {
+    background: var(--bg-card-hover);
+    border-color: var(--border-highlight);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Radar View Panels */
+.radar-view-panel {
+    display: none;
+    animation: fadeIn 0.25s ease forwards;
+}
+.radar-view-panel.active {
+    display: block;
+}
+
+/* Depth Ratio Imbalance Track */
+.depth-ratio-bar-wrap {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+.depth-ratio-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ratio-side.bid { color: #34d399; font-weight: 700; font-family: var(--font-mono); }
+.ratio-side.ask { color: #fb7185; font-weight: 700; font-family: var(--font-mono); }
+.ratio-center { color: var(--text-dim); font-size: 0.7rem; font-style: italic; }
+
+.depth-ratio-track {
+    display: flex;
+    height: 8px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.depth-ratio-fill.bid {
+    background: linear-gradient(90deg, #059669, #10b981);
+    transition: width 0.5s ease;
+}
+.depth-ratio-fill.ask {
+    background: linear-gradient(90deg, #f43f5e, #e11d48);
+    transition: width 0.5s ease;
+}
+
+/* Chart Canvas Container & Header */
+.chart-canvas-container {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.chart-canvas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chart-canvas-title {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    letter-spacing: 0.03em;
+}
+
+.chart-canvas-hint {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* Horizontal Volume-by-Price Profile Grid */
+.horizontal-profile-wrapper {
+    max-height: 440px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.profile-ladder-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.profile-bucket-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 150px;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    transition: all 0.15s ease;
+}
+.profile-bucket-row:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-highlight);
+    transform: scale(1.002);
+}
+
+.bucket-price-col {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.bucket-price {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.bucket-dist {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+.profile-bucket-row.overhead .bucket-dist { color: #fda4af; }
+.profile-bucket-row.underlying .bucket-dist { color: #6ee7b7; }
+
+.bucket-bar-track {
+    background: rgba(255, 255, 255, 0.03);
+    height: 18px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+}
+
+.bucket-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    transition: width 0.4s ease;
+}
+.bucket-bar-fill.supply-bar {
+    background: linear-gradient(90deg, rgba(244, 63, 94, 0.25), rgba(244, 63, 94, 0.75));
+    border-right: 2px solid #f43f5e;
+}
+.bucket-bar-fill.demand-bar {
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.75));
+    border-right: 2px solid #10b981;
+}
+
+.bar-fill-text {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+
+.bucket-meta-col {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.bucket-type-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+}
+.bucket-type-tag.tag-supply {
+    background: rgba(244, 63, 94, 0.15);
+    color: #fda4af;
+    border: 1px solid rgba(244, 63, 94, 0.3);
+}
+.bucket-type-tag.tag-demand {
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.bucket-vol-weight {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+
+/* Spot Laser Row in Horizontal Profile */
+.profile-spot-laser-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 4px 0;
+}
+
+.laser-line-left, .laser-line-right {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent-gold), transparent);
+}
+
+.laser-spot-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.2));
+    border: 1px solid var(--accent-gold);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+}
+
+.laser-icon { font-size: 0.85rem; }
+.laser-label { font-size: 0.7rem; font-weight: 800; color: var(--accent-gold); letter-spacing: 0.05em; }
+.laser-price { font-family: var(--font-mono); font-size: 0.95rem; font-weight: 800; color: #ffffff; }
+
+/* Vertical Multi-Timeframe Chart Toolbar */
+.vertical-chart-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.tf-selector-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tf-lbl {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+.tf-btn {
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tf-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+}
+.tf-btn.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.chart-legend-mini {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+}
+
+.chip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+.chip-dot.red { background: #f43f5e; box-shadow: 0 0 6px rgba(244, 63, 94, 0.5); }
+.chip-dot.green { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
+.chip-dot.gold { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
+
+/* Vertical Canvas Box & Tooltip */
+.vertical-canvas-box {
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+#vertical-candle-canvas {
+    width: 100%;
+    height: 380px;
+    display: block;
+    cursor: crosshair;
+}
+
+.canvas-tooltip {
+    position: absolute;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+    z-index: 10;
+    font-size: 0.72rem;
+    min-width: 140px;
+}
+
+.tt-time {
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 3px;
+    font-family: var(--font-mono);
+}
+
+.tt-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-family: var(--font-mono);
+    line-height: 1.4;
+}
+
+/* Vertical Liquidity Depth Ladder (DOM) */
 .liquidity-depth-ladder {
     display: flex;
     flex-direction: column;
@@ -1476,6 +1888,7 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
+    margin-bottom: 16px;
 }
 
 .liq-intel-box {
@@ -1505,22 +1918,39 @@ body {
     color: var(--text-muted);
 }
 
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
+/* Methodology & Transparency Banner */
+.methodology-notice-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
     background: rgba(255, 255, 255, 0.02);
-    font-size: 0.78rem;
+    border: 1px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
 }
 
-.liq-price {
-    font-family: var(--font-mono);
-    font-weight: 700;
-    color: #ffffff;
+.notice-icon {
+    font-size: 1rem;
+    line-height: 1.2;
 }
 
-.liq-type {
+.notice-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.notice-title {
     font-size: 0.68rem;
+    font-weight: 800;
     color: var(--text-dim);
-    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.notice-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.4;
 }
 
 /* ==============================================================================

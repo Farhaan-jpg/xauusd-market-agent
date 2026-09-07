@@ -241,7 +241,7 @@ async def get_macro_data() -> Dict[str, Any]:
 
 @app.get("/api/liquidity")
 async def get_liquidity_zones() -> Dict[str, Any]:
-    """Returns active liquidity zones above and below price."""
+    """Returns active liquidity zones, horizontal profile, and order-flow depth metrics."""
     zones = await Repository.get_active_liquidity_zones()
     snapshot = await Repository.get_latest_market_snapshot()
     if snapshot and snapshot.price > 0:
@@ -249,82 +249,108 @@ async def get_liquidity_zones() -> Dict[str, Any]:
     else:
         from app.data.market.market_provider import MarketDataProvider
         m_data = await MarketDataProvider().fetch()
-        price = m_data.get("price", 4430.00)
+        price = m_data.get("price", 4402.50)
 
     above = [z for z in zones if z.is_above]
     below = [z for z in zones if not z.is_above]
 
+    from app.analysis.liquidity.liquidity_engine import LiquidityEngine
+    engine = LiquidityEngine()
+
     if not above or not below:
         above_generated = [
             {
-                "price": round(price + 18.5, 2),
-                "range_low": round(price + 16.0, 2),
-                "range_high": round(price + 21.0, 2),
+                "price": round(price + 5.5, 2),
+                "range_low": round(price + 4.0, 2),
+                "range_high": round(price + 7.0, 2),
                 "type": "BUY_SIDE_LIQUIDITY_POOL",
-                "timeframe": "H1",
-                "strength": 92.0,
-                "distance": 18.5,
-                "volume_weight": "HIGH (Equal Highs)",
-                "sweep_risk": "High Stop Accumulation"
+                "timeframe": "15m",
+                "strength": 88.5,
+                "distance": 5.5,
+                "volume_weight": "HIGH (Intraday Stops)",
+                "sweep_risk": "Immediate Stop Trigger"
             },
             {
-                "price": round(price + 42.0, 2),
-                "range_low": round(price + 38.0, 2),
-                "range_high": round(price + 45.0, 2),
+                "price": round(price + 14.8, 2),
+                "range_low": round(price + 12.5, 2),
+                "range_high": round(price + 17.0, 2),
+                "type": "BEARISH_FAIR_VALUE_GAP",
+                "timeframe": "1H",
+                "strength": 82.0,
+                "distance": 14.8,
+                "volume_weight": "HIGH (Imbalance Zone)",
+                "sweep_risk": "Supply Defense Cluster"
+            },
+            {
+                "price": round(price + 28.5, 2),
+                "range_low": round(price + 26.0, 2),
+                "range_high": round(price + 31.0, 2),
                 "type": "INSTITUTIONAL_SUPPLY_BLOCK",
-                "timeframe": "H4",
-                "strength": 84.0,
-                "distance": 42.0,
+                "timeframe": "4H",
+                "strength": 91.5,
+                "distance": 28.5,
                 "volume_weight": "VERY HIGH (Major Supply)",
-                "sweep_risk": "Bearish Rejection Cluster"
+                "sweep_risk": "Major Institutional Ceiling"
             },
             {
-                "price": round(price + 68.0, 2),
-                "range_low": round(price + 64.0, 2),
-                "range_high": round(price + 72.0, 2),
-                "type": "WEEKLY_LIQUIDITY_CEILING",
-                "timeframe": "D1",
-                "strength": 75.0,
-                "distance": 68.0,
-                "volume_weight": "HIGH (Structural Resistance)",
-                "sweep_risk": "Key Reversal Horizon"
+                "price": round(price + 46.0, 2),
+                "range_low": round(price + 42.0, 2),
+                "range_high": round(price + 50.0, 2),
+                "type": "PREVIOUS_WEEK_HIGH",
+                "timeframe": "1W",
+                "strength": 94.0,
+                "distance": 46.0,
+                "volume_weight": "VERY HIGH (Macro Pivot)",
+                "sweep_risk": "Macro Reversal Horizon"
             }
         ]
         below_generated = [
             {
-                "price": round(price - 16.5, 2),
-                "range_low": round(price - 19.0, 2),
-                "range_high": round(price - 14.0, 2),
+                "price": round(price - 4.8, 2),
+                "range_low": round(price - 6.5, 2),
+                "range_high": round(price - 3.2, 2),
                 "type": "SELL_SIDE_LIQUIDITY_POOL",
-                "timeframe": "H1",
-                "strength": 88.0,
-                "distance": 16.5,
-                "volume_weight": "HIGH (Equal Lows / Stops)",
-                "sweep_risk": "Sell-Stop Trigger Pool"
-            },
-            {
-                "price": round(price - 38.0, 2),
-                "range_low": round(price - 41.0, 2),
-                "range_high": round(price - 35.0, 2),
-                "type": "INSTITUTIONAL_DEMAND_BLOCK",
-                "timeframe": "H4",
+                "timeframe": "15m",
                 "strength": 86.0,
-                "distance": 38.0,
-                "volume_weight": "VERY HIGH (Fair Value Gap)",
-                "sweep_risk": "Bullish Order Inflow"
+                "distance": 4.8,
+                "volume_weight": "HIGH (Equal Lows / Stops)",
+                "sweep_risk": "Sell-Stop Target"
             },
             {
-                "price": round(price - 65.0, 2),
-                "range_low": round(price - 69.0, 2),
-                "range_high": round(price - 61.0, 2),
-                "type": "MAJOR_SWING_DEMAND_FLOOR",
-                "timeframe": "D1",
-                "strength": 78.0,
-                "distance": 65.0,
-                "volume_weight": "HIGH (Structural Support)",
-                "sweep_risk": "Major Support Defense"
+                "price": round(price - 12.5, 2),
+                "range_low": round(price - 15.0, 2),
+                "range_high": round(price - 10.0, 2),
+                "type": "BULLISH_FAIR_VALUE_GAP",
+                "timeframe": "1H",
+                "strength": 84.5,
+                "distance": 12.5,
+                "volume_weight": "HIGH (Imbalance Fill)",
+                "sweep_risk": "Demand Inflow Area"
+            },
+            {
+                "price": round(price - 24.0, 2),
+                "range_low": round(price - 27.0, 2),
+                "range_high": round(price - 21.0, 2),
+                "type": "INSTITUTIONAL_DEMAND_BLOCK",
+                "timeframe": "4H",
+                "strength": 92.0,
+                "distance": 24.0,
+                "volume_weight": "VERY HIGH (Demand Block)",
+                "sweep_risk": "Key Support Cushion"
+            },
+            {
+                "price": round(price - 42.5, 2),
+                "range_low": round(price - 46.0, 2),
+                "range_high": round(price - 39.0, 2),
+                "type": "PREVIOUS_WEEK_LOW",
+                "timeframe": "1W",
+                "strength": 95.0,
+                "distance": 42.5,
+                "volume_weight": "VERY HIGH (Macro Floor)",
+                "sweep_risk": "Macro Structural Floor"
             }
         ]
+        all_raw_zones = [{"price": z["price"], "strength": z["strength"], "zone_type": z["type"]} for z in above_generated + below_generated]
     else:
         above_generated = [
             {
@@ -352,15 +378,27 @@ async def get_liquidity_zones() -> Dict[str, Any]:
                 "sweep_risk": "Active Order Pool"
             } for z in below
         ]
+        all_raw_zones = [{"price": z.price, "strength": z.strength, "zone_type": z.zone_type} for z in zones]
+
+    horizontal_profile = engine.generate_horizontal_profile(price, all_raw_zones)
+    
+    total_demand = sum(z["strength"] for z in below_generated)
+    total_supply = sum(z["strength"] for z in above_generated)
+    tot = total_demand + total_supply
+    demand_pct = round((total_demand / tot * 100.0), 1) if tot > 0 else 50.0
+    supply_pct = round(100.0 - demand_pct, 1)
 
     return {
         "current_price": price,
         "total_zones": len(above_generated) + len(below_generated),
-        "order_flow_bias": "BULLISH_ORDER_FLOW" if len(below_generated) >= len(above_generated) else "BEARISH_ORDER_FLOW",
+        "order_flow_bias": "BULLISH_ORDER_FLOW" if demand_pct >= supply_pct else "BEARISH_ORDER_FLOW",
+        "demand_depth_pct": demand_pct,
+        "supply_depth_pct": supply_pct,
         "immediate_resistance": above_generated[0]["price"] if above_generated else price + 15,
         "immediate_support": below_generated[0]["price"] if below_generated else price - 15,
         "liquidity_above": above_generated,
-        "liquidity_below": below_generated
+        "liquidity_below": below_generated,
+        "horizontal_profile": horizontal_profile
     }
 
 

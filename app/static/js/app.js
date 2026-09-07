@@ -10,6 +10,8 @@ let knownNewsFingerprints = new Set();
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initSessions();
+    initRadarSubNav();
+    initVerticalChart();
     initActionButtons();
     initSettingsDrawer();
     
@@ -148,6 +150,26 @@ function updateExecutiveReport(data) {
     if (confFill) {
         confFill.setAttribute("stroke-dasharray", `${conf}, 100`);
         confFill.style.stroke = conf >= 80 ? "#10b981" : conf >= 60 ? "#f59e0b" : "#f43f5e";
+    }
+
+    // Actionable Trading Posture Flag
+    const postureEl = document.getElementById("hero-action-posture");
+    const postureIcon = document.getElementById("hero-posture-icon");
+    const postureText = document.getElementById("hero-posture-text");
+    if (postureEl && postureText) {
+        if (conf < 60 || dir === "NEUTRAL") {
+            postureEl.className = "action-posture-badge wait";
+            if (postureIcon) postureIcon.textContent = "⚠️";
+            postureText.textContent = "TACTICAL POSTURE: WAIT / CONSOLIDATION (Low Conviction — Liquidity Defense)";
+        } else if (dir.includes("BULL")) {
+            postureEl.className = "action-posture-badge long";
+            if (postureIcon) postureIcon.textContent = "🚀";
+            postureText.textContent = `TACTICAL POSTURE: ACTIVE LONG CONVICTION (${conf}% Conviction — Target Overhead Supply Liquidity)`;
+        } else {
+            postureEl.className = "action-posture-badge short";
+            if (postureIcon) postureIcon.textContent = "🔻";
+            postureText.textContent = `TACTICAL POSTURE: ACTIVE SHORT CONVICTION (${conf}% Conviction — Target Underlying Demand Liquidity)`;
+        }
     }
 
     // Verdict Narrative
@@ -491,12 +513,456 @@ function updateInstitutionalFlow(data) {
     }
 }
 
+let currentActiveRadarView = "view-horizontal";
+let activeCandleTimeframe = "H1";
+let cachedCandlesData = null;
+let cachedLiquidityData = null;
+let candleMousePos = null;
+
+/* ==============================================================================
+   4A. RADAR SUB-NAVIGATION & MULTI-CHART CONTROLLER
+   ============================================================================== */
+function initRadarSubNav() {
+    const subButtons = document.querySelectorAll(".radar-sub-btn");
+    const subPanels = document.querySelectorAll(".radar-view-panel");
+
+    subButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetView = btn.getAttribute("data-view");
+            currentActiveRadarView = targetView;
+
+            subButtons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            subPanels.forEach(panel => {
+                panel.classList.toggle("active", panel.id === targetView);
+            });
+
+            if (targetView === "view-vertical") {
+                loadAndRenderVerticalCandles(activeCandleTimeframe);
+            } else if (targetView === "view-horizontal" && cachedLiquidityData) {
+                const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
+                const curPrice = cachedLiquidityData.current_price || liveDomPrice || 4430.00;
+                renderHorizontalProfile(cachedLiquidityData.horizontal_profile, curPrice);
+            }
+        });
+    });
+}
+
+/* ==============================================================================
+   4B. HORIZONTAL LIQUIDITY DEPTH PROFILE
+   ============================================================================== */
+function renderHorizontalProfile(profile, curPrice) {
+    const container = document.getElementById("horizontal-profile-chart");
+    if (!container) return;
+
+    if (!Array.isArray(profile) || profile.length === 0) {
+        // Fallback synthetic profile centered on curPrice
+        profile = [];
+        for (let i = 12; i >= -12; i--) {
+            const p = curPrice + (i * 4.0);
+            const isAbove = i > 0;
+            const str = Math.min(96, Math.max(35, Math.round(50 + Math.abs(i) * 3.5 + Math.sin(i * 1.5) * 15)));
+            profile.push({
+                price: p,
+                label: `$${p.toFixed(1)}`,
+                type: isAbove ? (i > 6 ? "SUPPLY_WALL" : "FAIR_VALUE_GAP") : (i < -6 ? "DEMAND_WALL" : "FAIR_VALUE_GAP"),
+                strength: str,
+                volume_weight: (str / 50).toFixed(2),
+                distance_pts: Math.abs(p - curPrice).toFixed(1),
+                is_above: isAbove
+            });
+        }
+    }
+
+    // Sort buckets top to bottom (descending by price)
+    const sorted = [...profile].sort((a, b) => b.price - a.price);
+
+    let html = `<div class="profile-ladder-grid">`;
+    let spotInserted = false;
+
+    sorted.forEach(b => {
+        // Insert spot marker when crossing current price
+        if (!spotInserted && b.price <= curPrice) {
+            html += `
+                <div class="profile-spot-laser-row">
+                    <div class="laser-line-left"></div>
+                    <div class="laser-spot-pill">
+                        <span class="laser-icon">📍</span>
+                        <span class="laser-label">LIVE SPOT:</span>
+                        <span class="laser-price">$${curPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="laser-line-right"></div>
+                </div>
+            `;
+            spotInserted = true;
+        }
+
+        const isAbove = b.price > curPrice;
+        const dist = Math.abs(b.price - curPrice).toFixed(1);
+        const strength = Math.round(b.strength || 65);
+        const barCls = isAbove ? "supply-bar" : "demand-bar";
+        const typeLabel = (b.type || (isAbove ? "SUPPLY POOL" : "DEMAND POOL")).replace(/_/g, " ");
+
+        html += `
+            <div class="profile-bucket-row ${isAbove ? 'overhead' : 'underlying'}" 
+                 data-price="${b.price.toFixed(2)}" 
+                 data-type="${escapeHtml(typeLabel)}" 
+                 data-strength="${strength}" 
+                 data-dist="${dist}" 
+                 data-weight="${b.volume_weight || '1.0'}">
+                <div class="bucket-price-col">
+                    <span class="bucket-price">$${Number(b.price).toFixed(2)}</span>
+                    <span class="bucket-dist">${isAbove ? '+' : '-'}${dist} pts</span>
+                </div>
+                <div class="bucket-bar-track">
+                    <div class="bucket-bar-fill ${barCls}" style="width: ${strength}%;">
+                        <span class="bar-fill-text">${strength}% Depth</span>
+                    </div>
+                </div>
+                <div class="bucket-meta-col">
+                    <span class="bucket-type-tag ${isAbove ? 'tag-supply' : 'tag-demand'}">${escapeHtml(typeLabel)}</span>
+                    <span class="bucket-vol-weight">x${b.volume_weight || '1.0'} vol</span>
+                </div>
+            </div>
+        `;
+    });
+
+    if (!spotInserted) {
+        html += `
+            <div class="profile-spot-laser-row">
+                <div class="laser-line-left"></div>
+                <div class="laser-spot-pill">
+                    <span class="laser-icon">📍</span>
+                    <span class="laser-label">LIVE SPOT:</span>
+                    <span class="laser-price">$${curPrice.toFixed(2)}</span>
+                </div>
+                <div class="laser-line-right"></div>
+            </div>
+        `;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+/* ==============================================================================
+   4C. VERTICAL CANDLESTICK & LIQUIDITY ZONE RADAR
+   ============================================================================== */
+function initVerticalChart() {
+    const tfButtons = document.querySelectorAll(".tf-btn");
+    tfButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tfButtons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeCandleTimeframe = btn.getAttribute("data-tf") || "H1";
+            loadAndRenderVerticalCandles(activeCandleTimeframe);
+        });
+    });
+
+    const canvas = document.getElementById("vertical-candle-canvas");
+    if (canvas) {
+        canvas.addEventListener("mousemove", (e) => {
+            const rect = canvas.getBoundingClientRect();
+            candleMousePos = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                canvasWidth: rect.width,
+                canvasHeight: rect.height
+            };
+            if (cachedCandlesData) {
+                drawCandlestickCanvas(cachedCandlesData);
+            }
+        });
+
+        canvas.addEventListener("mouseleave", () => {
+            candleMousePos = null;
+            const tooltip = document.getElementById("candle-tooltip");
+            if (tooltip) tooltip.style.display = "none";
+            if (cachedCandlesData) {
+                drawCandlestickCanvas(cachedCandlesData);
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            if (currentActiveRadarView === "view-vertical" && cachedCandlesData) {
+                drawCandlestickCanvas(cachedCandlesData);
+            }
+        });
+    }
+}
+
+async function loadAndRenderVerticalCandles(tf) {
+    try {
+        const res = await fetch(`/api/candles?timeframe=${tf || activeCandleTimeframe}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        cachedCandlesData = data;
+        drawCandlestickCanvas(data);
+    } catch (e) {
+        console.debug("Failed to load candles:", e);
+    }
+}
+
+function drawCandlestickCanvas(data) {
+    const canvas = document.getElementById("vertical-candle-canvas");
+    if (!canvas || !data || !Array.isArray(data.candles) || data.candles.length === 0) return;
+
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width || 860;
+    const height = rect.height || 360;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+
+    // Padding
+    const padTop = 20;
+    const padBottom = 35;
+    const padLeft = 15;
+    const padRight = 75; // for price axis
+
+    const plotW = width - padLeft - padRight;
+    const plotH = height - padTop - padBottom;
+
+    // Determine min/max price
+    const candles = data.candles;
+    let minPrice = Infinity;
+    let maxPrice = -Infinity;
+
+    candles.forEach(c => {
+        if (c.low < minPrice) minPrice = c.low;
+        if (c.high > maxPrice) maxPrice = c.high;
+    });
+
+    const overlays = Array.isArray(data.liquidity_overlays) ? data.liquidity_overlays : [];
+    overlays.forEach(ov => {
+        if (ov.range_low && ov.range_low < minPrice) minPrice = ov.range_low;
+        if (ov.range_high && ov.range_high > maxPrice) maxPrice = ov.range_high;
+        if (ov.price && ov.price < minPrice) minPrice = ov.price;
+        if (ov.price && ov.price > maxPrice) maxPrice = ov.price;
+    });
+
+    const curPrice = data.current_price || (candles[candles.length - 1] ? candles[candles.length - 1].close : 4430.0);
+    if (curPrice < minPrice) minPrice = curPrice;
+    if (curPrice > maxPrice) maxPrice = curPrice;
+
+    // Add 3% buffer
+    const priceSpan = (maxPrice - minPrice) || 10;
+    minPrice -= priceSpan * 0.05;
+    maxPrice += priceSpan * 0.05;
+
+    const priceToY = (p) => padTop + plotH - ((p - minPrice) / (maxPrice - minPrice)) * plotH;
+    const yToPrice = (y) => minPrice + ((padTop + plotH - y) / plotH) * (maxPrice - minPrice);
+
+    // 1. Background
+    ctx.fillStyle = "#0a0d14";
+    ctx.fillRect(0, 0, width, height);
+
+    // 2. Horizontal Grid Lines & Price Axis
+    const numGridLines = 6;
+    ctx.textAlign = "left";
+    ctx.font = "10px JetBrains Mono, monospace";
+
+    for (let i = 0; i <= numGridLines; i++) {
+        const y = padTop + (plotH / numGridLines) * i;
+        const p = yToPrice(y);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padLeft, y);
+        ctx.lineTo(width - padRight, y);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+        ctx.fillText(`$${p.toFixed(1)}`, width - padRight + 8, y + 3);
+    }
+    ctx.setLineDash([]);
+
+    // 3. Liquidity Zone Overlays
+    overlays.forEach(ov => {
+        const topY = priceToY(ov.range_high || ov.price + 2.0);
+        const botY = priceToY(ov.range_low || ov.price - 2.0);
+        const boxH = Math.max(4, botY - topY);
+
+        ctx.fillStyle = ov.color || "rgba(244, 63, 94, 0.15)";
+        ctx.fillRect(padLeft, topY, plotW, boxH);
+
+        ctx.strokeStyle = ov.border_color || "rgba(244, 63, 94, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(padLeft, topY, plotW, boxH);
+        ctx.setLineDash([]);
+
+        // Zone Tag
+        ctx.fillStyle = ov.border_color || "#f43f5e";
+        ctx.font = "9px Inter, sans-serif";
+        ctx.fillText(ov.title || ov.type, padLeft + 6, topY + Math.min(boxH - 2, 11));
+    });
+
+    // 4. Candlesticks
+    const barCount = candles.length;
+    const barWidth = Math.max(3, (plotW / barCount) * 0.7);
+    const barSpacing = plotW / barCount;
+
+    candles.forEach((c, idx) => {
+        const x = padLeft + (idx * barSpacing) + (barSpacing / 2);
+        const isBull = c.close >= c.open;
+        const color = isBull ? "#10b981" : "#f43f5e";
+
+        // High-Low Wick
+        const yHigh = priceToY(c.high);
+        const yLow = priceToY(c.low);
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x, yHigh);
+        ctx.lineTo(x, yLow);
+        ctx.stroke();
+
+        // Open-Close Body
+        const yOpen = priceToY(c.open);
+        const yClose = priceToY(c.close);
+        const bodyTop = Math.min(yOpen, yClose);
+        const bodyH = Math.max(2, Math.abs(yOpen - yClose));
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x - (barWidth / 2), bodyTop, barWidth, bodyH);
+    });
+
+    // 5. Time Axis (Bottom)
+    ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+    ctx.font = "9px JetBrains Mono, monospace";
+    ctx.textAlign = "center";
+    const timeStep = Math.max(1, Math.floor(barCount / 6));
+
+    for (let i = 0; i < barCount; i += timeStep) {
+        const c = candles[i];
+        if (!c || !c.time) continue;
+        const x = padLeft + (i * barSpacing) + (barSpacing / 2);
+        const d = new Date(c.time * 1000);
+        const timeStr = `${d.getUTCHours().toString().padStart(2, '0')}:${d.getUTCMinutes().toString().padStart(2, '0')}`;
+        ctx.fillText(timeStr, x, height - 10);
+    }
+
+    // 6. Live Spot Laser Line & Right Badge
+    const spotY = priceToY(curPrice);
+    if (spotY >= padTop && spotY <= padTop + plotH) {
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.moveTo(padLeft, spotY);
+        ctx.lineTo(width - padRight, spotY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Gold Badge
+        ctx.fillStyle = "#f59e0b";
+        ctx.fillRect(width - padRight + 2, spotY - 9, padRight - 6, 18);
+        ctx.fillStyle = "#000000";
+        ctx.font = "bold 9px JetBrains Mono, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`$${curPrice.toFixed(2)}`, width - (padRight / 2), spotY + 3);
+    }
+
+    // 7. Interactive Crosshair & Tooltip
+    if (candleMousePos && candleMousePos.x >= padLeft && candleMousePos.x <= width - padRight && candleMousePos.y >= padTop && candleMousePos.y <= padTop + plotH) {
+        const mx = candleMousePos.x;
+        const my = candleMousePos.y;
+
+        // Draw crosshair lines
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+        ctx.lineWidth = 0.8;
+        ctx.setLineDash([2, 2]);
+
+        ctx.beginPath();
+        ctx.moveTo(mx, padTop);
+        ctx.lineTo(mx, padTop + plotH);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(padLeft, my);
+        ctx.lineTo(width - padRight, my);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Hover price pill on Y axis
+        const hoverPrice = yToPrice(my);
+        ctx.fillStyle = "#3b82f6";
+        ctx.fillRect(width - padRight + 2, my - 8, padRight - 6, 16);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 9px JetBrains Mono, monospace";
+        ctx.textAlign = "center";
+        ctx.fillText(`$${hoverPrice.toFixed(2)}`, width - (padRight / 2), my + 3);
+
+        // Find nearest candle
+        const candleIdx = Math.min(barCount - 1, Math.max(0, Math.floor((mx - padLeft) / barSpacing)));
+        const hoveredCandle = candles[candleIdx];
+
+        if (hoveredCandle) {
+            const tooltip = document.getElementById("candle-tooltip");
+            if (tooltip) {
+                const isBull = hoveredCandle.close >= hoveredCandle.open;
+                const d = new Date(hoveredCandle.time * 1000);
+                tooltip.style.display = "block";
+                tooltip.style.left = `${Math.min(width - 200, Math.max(20, mx + 15))}px`;
+                tooltip.style.top = `${Math.min(height - 110, Math.max(10, my - 30))}px`;
+                tooltip.innerHTML = `
+                    <div class="tt-time">${d.toUTCString().slice(5, 22)} UTC</div>
+                    <div class="tt-row"><span>Open:</span> <b>$${hoveredCandle.open.toFixed(2)}</b></div>
+                    <div class="tt-row"><span>High:</span> <b class="color-green">$${hoveredCandle.high.toFixed(2)}</b></div>
+                    <div class="tt-row"><span>Low:</span> <b class="color-red">$${hoveredCandle.low.toFixed(2)}</b></div>
+                    <div class="tt-row"><span>Close:</span> <b class="${isBull ? 'color-green' : 'color-red'}">$${hoveredCandle.close.toFixed(2)}</b></div>
+                `;
+            }
+        }
+    }
+}
+
+/* ==============================================================================
+   4D. MAIN LIQUIDITY UPDATER
+   ============================================================================== */
 function updateLiquidityData(data) {
     if (!data) return;
+    cachedLiquidityData = data;
 
     const liveDomPrice = parseFloat(document.getElementById("live-gold-price")?.textContent) || null;
     const curPrice = data.current_price || liveDomPrice || 4430.00;
     
+    // Depth Ratio Bar
+    const bidPct = data.demand_depth_pct || 54;
+    const askPct = data.supply_depth_pct || (100 - bidPct);
+    
+    const bidPctEl = document.getElementById("liq-bid-pct");
+    const askPctEl = document.getElementById("liq-ask-pct");
+    const bidFillEl = document.getElementById("liq-bid-fill");
+    const askFillEl = document.getElementById("liq-ask-fill");
+    const imbTagEl = document.getElementById("liq-imbalance-ratio-tag");
+
+    if (bidPctEl) bidPctEl.textContent = `${bidPct}%`;
+    if (askPctEl) askPctEl.textContent = `${askPct}%`;
+    if (bidFillEl) bidFillEl.style.width = `${bidPct}%`;
+    if (askFillEl) askFillEl.style.width = `${askPct}%`;
+    if (imbTagEl) {
+        imbTagEl.textContent = bidPct > askPct ? "Net Institutional Accumulation" : "Net Institutional Distribution";
+    }
+
+    // Render Horizontal Profile
+    renderHorizontalProfile(data.horizontal_profile, curPrice);
+
+    // If Vertical Radar is active, update candles or current price
+    if (currentActiveRadarView === "view-vertical" && cachedCandlesData) {
+        cachedCandlesData.current_price = curPrice;
+        drawCandlestickCanvas(cachedCandlesData);
+    }
+
     // Spot Price Anchor in Ladder
     const spotEl = document.getElementById("ladder-spot-price");
     if (spotEl) {
@@ -588,7 +1054,7 @@ function updateLiquidityData(data) {
 
     const imbVal = document.getElementById("liq-imbalance-val");
     if (imbVal) {
-        imbVal.textContent = data.order_flow_bias === "BULLISH_ORDER_FLOW" ? "+64% Buy Depth" : "-58% Sell Pressure";
+        imbVal.textContent = data.order_flow_bias === "BULLISH_ORDER_FLOW" ? `+${bidPct}% Buy Depth` : `-${askPct}% Sell Pressure`;
         imbVal.className = `intel-val ${data.order_flow_bias === "BULLISH_ORDER_FLOW" ? 'color-green' : 'color-red'}`;
     }
 }
