@@ -567,5 +567,114 @@ High probability of institutional slippage, spread expansion, and two-way stop h
 ━━━━━━━━━━━━━━━━━━━━
 <i>Institutional volatility protection protocol.</i>""".strip()
 
+    @staticmethod
+    def htf_command_response(htf_data: dict, current_price: float) -> str:
+        esc = TelegramBot.escape
+        anchor = htf_data.get("htf_anchor", "STRONG_BULLISH_DOMINANCE")
+        bias = htf_data.get("htf_bias", "BULLISH")
+        clarity = htf_data.get("clarity_label", "")
+        directive = htf_data.get("actionable_directive", "")
+        sync = htf_data.get("sync_score_pct", 85)
+
+        cards = ""
+        for s in htf_data.get("scorecard", []):
+            tf = s.get("timeframe")
+            trend = s.get("trend")
+            status = s.get("status")
+            status_emoji = "✅" if status == "ALIGNED" else "⚠️"
+            cards += f"\n  {status_emoji} <b>{tf}:</b> {esc(trend)} ({esc(status)})"
+
+        return f"""🛡 <b>5-TIER TIMEFRAME ANCHOR & ANTI-CONFUSION RADAR</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Spot Price:</b> ${current_price:.2f}
+🏛 <b>HTF Anchor (1D/4H):</b> <b>{esc(anchor.replace('_', ' '))}</b>
+🎯 <b>Dominant Macro Bias:</b> <b>{esc(bias)}</b> ({sync}% Alignment)
+━━━━━━━━━━━━━━━━━━━━
+<b>📊 TIMEFRAME HIERARCHY:</b>{cards}
+━━━━━━━━━━━━━━━━━━━━
+📝 <b>Market Clarity:</b>
+• <b>{esc(clarity)}</b>
+
+⚡ <b>Actionable Directive:</b>
+• <i>{esc(directive)}</i>
+━━━━━━━━━━━━━━━━━━━━
+<i>Institutional timeframe hierarchy. Eliminates counter-trend confusion.</i>""".strip()
+
+    @staticmethod
+    def fvg_command_response(fvg_data: dict, current_price: float) -> str:
+        esc = TelegramBot.escape
+        fvgs = fvg_data.get("active_fvgs", [])
+        obs = fvg_data.get("active_order_blocks", [])
+
+        fvg_str = ""
+        for f in fvgs[:3]:
+            emoji = "🟢" if "BULL" in f.get("type", "") else "🔴"
+            fvg_str += f"\n  {emoji} <b>{esc(f.get('type'))}</b>: ${f.get('gap_low', 0):.2f} - ${f.get('gap_high', 0):.2f} ({f.get('distance_pts', 0)} pts away)"
+        if not fvg_str: fvg_str = "\n  • No fresh unmitigated FVGs"
+
+        ob_str = ""
+        for o in obs[:2]:
+            emoji = "🟢" if "BULL" in o.get("type", "") else "🔴"
+            ob_str += f"\n  {emoji} <b>{esc(o.get('type'))}</b>: ${o.get('zone_low', 0):.2f} - ${o.get('zone_high', 0):.2f} (Str: {o.get('strength', 85)})"
+        if not ob_str: ob_str = "\n  • No fresh order blocks"
+
+        return f"""📦 <b>FAIR VALUE GAPS (FVG) & ORDER BLOCKS (5M/15M)</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Current Spot:</b> ${current_price:.2f}
+
+<b>🌊 UNMITIGATED FAIR VALUE GAPS:</b>{fvg_str}
+
+<b>🏛 INSTITUTIONAL ORDER BLOCKS:</b>{ob_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>Smart money imbalance & institutional mitigation radar.</i>""".strip()
+
+    @staticmethod
+    def fedwatch_command_response(fedwatch_data: dict) -> str:
+        esc = TelegramBot.escape
+        total_cut = fedwatch_data.get("total_cut_probability_pct", 85)
+        cut_25 = fedwatch_data.get("prob_cut_25bps", 75)
+        cut_50 = fedwatch_data.get("prob_cut_50bps", 10)
+        pause = fedwatch_data.get("prob_pause", 15)
+        hike = fedwatch_data.get("prob_hike", 0)
+        stance = fedwatch_data.get("monetary_policy_regime", "DOVISH")
+        impact = fedwatch_data.get("gold_macro_impact", "BULLISH_TAILWIND")
+
+        return f"""🏛 <b>CME FEDWATCH INTEREST RATE PROBABILITY GAUGE</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+📊 <b>Implied FOMC Rate Path Probabilities:</b>
+• 🟢 <b>Total Rate Cut Probability:</b> <b>{total_cut:.1f}%</b>
+  - 25 bps Cut: <b>{cut_25:.1f}%</b>
+  - 50 bps Jumbo Cut: <b>{cut_50:.1f}%</b>
+• ⚪ <b>Pause / Unchanged:</b> <b>{pause:.1f}%</b>
+• 🔴 <b>Rate Hike:</b> <b>{hike:.1f}%</b>
+━━━━━━━━━━━━━━━━━━━━
+🏛 <b>Monetary Policy Stance:</b> <b>{esc(stance.replace('_', ' '))}</b>
+🟡 <b>Gold Macro Impact:</b> <b>{esc(impact.replace('_', ' '))}</b>
+━━━━━━━━━━━━━━━━━━━━
+<i>Implied rate cut probabilities derived from Treasury curve differentials.</i>""".strip()
+
+    @staticmethod
+    def journal_command_response(journal_data: dict) -> str:
+        esc = TelegramBot.escape
+        total = journal_data.get("total_logged_setups", 0)
+        win_rate = journal_data.get("win_rate_pct", 0)
+        pnl = journal_data.get("total_points_captured", 0)
+        avg_rr = journal_data.get("average_realized_rr", 0)
+        exp = journal_data.get("expectancy_per_trade_r", 0)
+
+        return f"""📊 <b>TRADE JOURNAL & SETUP PERFORMANCE RADAR</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+🏆 <b>Win Rate:</b> <b>{win_rate:.1f}%</b> ({journal_data.get('win_count', 0)}W / {journal_data.get('loss_count', 0)}L)
+💰 <b>Total Points Captured:</b> <b>+{pnl:+.1f} pts</b>
+⚖️ <b>Average Realized R:R:</b> <b>1:{avg_rr:.2f}</b>
+📈 <b>Expectancy per Trade:</b> <b>+{exp:.2f}R</b>
+━━━━━━━━━━━━━━━━━━━━
+<i>Tracked performance across multi-timeframe quantitative setups.</i>""".strip()
+
+
 
 

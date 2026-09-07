@@ -199,7 +199,9 @@
             <button class="banner-close" id="btn-close-banner" aria-label="Dismiss">✕</button>
         </div>
 
-            <button class="seg-btn" data-tab="tab-overview">
+        <!-- TAB NAVIGATION BAR -->
+        <nav class="tab-segments-bar">
+            <button class="seg-btn active" data-tab="tab-overview">
                 <span class="seg-icon">🎯</span>
                 <span class="seg-text">Executive Verdict</span>
             </button>
@@ -214,7 +216,7 @@
             </button>
             <button class="seg-btn" data-tab="tab-drivers">
                 <span class="seg-icon">📊</span>
-                <span class="seg-text">Macro & Drivers</span>
+                <span class="seg-text">Macro & FedWatch</span>
             </button>
             <button class="seg-btn" data-tab="tab-chart">
                 <span class="seg-icon">🌊</span>
@@ -226,13 +228,54 @@
             </button>
         </nav>
 
-
         <!-- MAIN DASHBOARD CONTENT AREA -->
         <main class="dashboard-main">
             <!-- ========================================================= -->
-            <!-- 1. EXECUTIVE VERDICT & LIVE SYNTHESIS (DEFAULT VIEW) -->
+            <!-- 1. EXECUTIVE VERDICT & 3-SECOND ONE-LOOK COCKPIT -->
             <!-- ========================================================= -->
             <section class="content-panel active" id="tab-overview">
+                
+                <!-- 3-SECOND ONE-LOOK EXECUTIVE COCKPIT HERO BANNER -->
+                <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; padding: 18px 22px; margin-bottom: 20px; box-shadow: 0 0 25px rgba(245, 158, 11, 0.08);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 12px; margin-bottom: 14px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.3rem;">⚡</span>
+                            <div>
+                                <span style="font-size: 0.68rem; letter-spacing: 0.1em; color: #fbbf24; font-weight: 800; text-transform: uppercase;">3-Second Actionable Executive Summary</span>
+                                <h2 style="font-size: 1.15rem; color: #ffffff; margin: 0;">ONE-LOOK TRADER'S COCKPIT</h2>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="one-look-lockout-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 6px;">
+                                🛡 SPREAD DEFENSE: OPTIMAL
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+                        <!-- Col 1: Dominant Market Bias -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px;">
+                            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">1. Dominant Market Bias</span>
+                            <strong id="one-look-bias" style="color: #38bdf8; font-size: 1.05rem; display: block; margin: 4px 0;">STRONG BULLISH (85%)</strong>
+                            <span id="one-look-clarity" style="font-size: 0.72rem; color: #cbd5e1;">Macro 1D/4H Anchor Aligned</span>
+                        </div>
+
+                        <!-- Col 2: Tactical Action Right Now -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px;">
+                            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">2. Immediate Tactical Action</span>
+                            <strong id="one-look-action" style="color: #34d399; font-size: 0.92rem; display: block; margin: 4px 0;">MOMENTUM LONG BREAKOUTS</strong>
+                            <span id="one-look-action-sub" style="font-size: 0.72rem; color: #cbd5e1;">Buy pullbacks into 5M VWAP / FVG Demand</span>
+                        </div>
+
+                        <!-- Col 3: Risk Invalidation Boundary -->
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 12px;">
+                            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block;">3. Structural Invalidation Level</span>
+                            <strong id="one-look-invalidation" style="color: #f43f5e; font-size: 1.05rem; display: block; margin: 4px 0;">$2,688.50</strong>
+                            <span style="font-size: 0.72rem; color: #cbd5e1;">Exit longs if price breaks below level</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- HERO EXECUTIVE VERDICT CARD -->
                 <div class="hero-verdict-card">
                     <div class="verdict-top-bar">
@@ -297,23 +340,51 @@
                     </div>
                 </div>
 
-                <!-- 2-COLUMN ESSENTIALS GRID (Stack on mobile, side-by-side on desktop) -->
+                <!-- 2-COLUMN ESSENTIALS GRID -->
                 <div class="essentials-grid">
-                    <!-- Column 1: Dominant Drivers & Factor Matrix -->
+                    <!-- Column 1: 5-Tier Timeframe Scorecard & Dominant Drivers -->
                     <div class="info-card">
                         <div class="card-header">
                             <div class="header-title">
-                                <span class="card-icon">⚡</span>
-                                <h3>Dominant Market Drivers</h3>
+                                <span class="card-icon">🛡</span>
+                                <h3>5-Tier Timeframe Alignment Scorecard</h3>
                             </div>
-                            <span class="card-hint">Key Influencers</span>
+                            <span class="badge-tag" id="htf-sync-badge" style="color: #38bdf8; font-weight: 800;">HTF: --%</span>
                         </div>
                         <div class="card-body">
+                            <!-- 5-Tier Scorecard Pills Grid -->
+                            <div id="htf-scorecard-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 14px;">
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">1D (35%)</span>
+                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">4H (30%)</span>
+                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">1H (20%)</span>
+                                    <strong style="font-size: 0.8rem; color: #34d399;">BULL</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">15M (10%)</span>
+                                    <strong style="font-size: 0.8rem; color: #fbbf24;">NEUT</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">5M (5%)</span>
+                                    <strong style="font-size: 0.8rem; color: #fb7185;">BEAR</strong>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.78rem; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border-left: 3px solid #38bdf8; margin-bottom: 14px;">
+                                <span>🧠 <b>Anti-Confusion Status:</b> <span id="htf-clarity-status">HEALTHY BULLISH PULLBACK (Buy-the-Dip in Demand)</span></span>
+                            </div>
+
                             <div class="drivers-list" id="dominant-drivers-list">
                                 <div class="empty-state-mini">Loading dominant drivers...</div>
                             </div>
 
-                            <div class="factor-split">
+                            <div class="factor-split" style="margin-top: 10px;">
                                 <div class="factor-col supporting">
                                     <span class="factor-header">✅ Supporting</span>
                                     <ul class="factor-list" id="supporting-factors-list">
@@ -384,7 +455,7 @@
 
                 <!-- 2-Column Scalper Grid -->
                 <div class="essentials-grid">
-                    <!-- Column 1: Actionable Trade Setups -->
+                    <!-- Column 1: Actionable Trade Setups & Execution Roadmap -->
                     <div class="info-card">
                         <div class="card-header">
                             <div class="header-title">
@@ -397,20 +468,39 @@
                             <div id="scalp-setups-container">
                                 <div class="empty-state-mini">Calculating multi-timeframe trade confluence...</div>
                             </div>
+
+                            <!-- 4-STEP TRADE MANAGEMENT ROADMAP -->
+                            <div style="margin-top: 18px; background: rgba(0,0,0,0.35); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 14px;">
+                                <span style="font-size: 0.72rem; color: #fbbf24; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 8px;">📋 Systematic 4-Step Scale-Out Roadmap</span>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 0.75rem;">
+                                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                        <b style="color: #38bdf8;">1. Entry:</b> <span id="scaleout-step-1">Designated zone with 1.0R risk</span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                        <b style="color: #34d399;">2. Scale:</b> <span id="scaleout-step-2">Take 50% Profit at TP1 (+1.5R)</span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                        <b style="color: #fbbf24;">3. Risk Zero:</b> <span id="scaleout-step-3">Move SL to Breakeven+spread</span>
+                                    </div>
+                                    <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">
+                                        <b style="color: #f43f5e;">4. Runner:</b> <span id="scaleout-step-4">Trail remaining 50% to TP2 (+3R+)</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Column 2: 4-Tier Confluence Matrix & ADR -->
+                    <!-- Column 2: 4-Tier Confluence Matrix, FVGs, & Judas Swings -->
                     <div class="info-card">
                         <div class="card-header">
                             <div class="header-title">
                                 <span class="card-icon">🔥</span>
-                                <h3>4-Tier Confluence Matrix</h3>
+                                <h3>4-Tier Confluence & Smart Money Radar</h3>
                             </div>
                             <span class="badge-tag" id="scalp-confluence-grade" style="color: #f59e0b; font-weight: 800;">GRADE: --</span>
                         </div>
                         <div class="card-body">
-                            <div style="margin-bottom: 16px;">
+                            <div style="margin-bottom: 14px;">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 6px;">
                                     <span style="color: #94a3b8;">Confluence Alignment:</span>
                                     <strong id="scalp-confluence-pct" style="color: #f59e0b;">0%</strong>
@@ -424,7 +514,29 @@
                                 <div class="empty-state-mini">Evaluating timeframe confluences...</div>
                             </div>
 
-                            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 16px 0;">
+                            <!-- UNMITIGATED FAIR VALUE GAPS (FVG) CARD -->
+                            <div style="margin-top: 14px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.06);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">
+                                    <span>📦 <b>5M/15M Fair Value Gaps (FVG)</b></span>
+                                    <span id="fvg-active-count" style="color: #38bdf8;">-- Active</span>
+                                </div>
+                                <div id="fvg-zones-list" style="font-size: 0.75rem; color: #cbd5e1;">
+                                    <span>Scanning for 3-candle imbalance gaps...</span>
+                                </div>
+                            </div>
+
+                            <!-- JUDAS SWING & SESSION PURGE -->
+                            <div style="margin-top: 10px; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; border: 1px solid rgba(255,255,255,0.06);">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 4px;">
+                                    <span>🌊 <b>Judas Swing Sweep Purge</b></span>
+                                    <span id="judas-status-badge" style="color: #34d399; font-weight: 700;">MONITORING</span>
+                                </div>
+                                <p id="judas-narrative" style="font-size: 0.75rem; color: #cbd5e1; margin: 0;">
+                                    Monitoring London/NY open sweeps of Asian session highs/lows...
+                                </p>
+                            </div>
+
+                            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 14px 0;">
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.8rem;">
                                 <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
@@ -434,6 +546,22 @@
                                 <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                                     <span style="color: #94a3b8; display: block; font-size: 0.72rem;">ADR EXHAUSTION</span>
                                     <strong id="scalp-adr-exhaust" style="color: #e2e8f0; font-size: 0.95rem;">--</strong>
+                                </div>
+                            </div>
+
+                            <!-- TRADE PERFORMANCE / JOURNAL SUMMARY -->
+                            <div style="margin-top: 12px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                                <div>
+                                    <span style="color: #94a3b8;">Setup Win Rate:</span>
+                                    <strong id="journal-win-rate" style="color: #34d399; margin-left: 4px;">--%</strong>
+                                </div>
+                                <div>
+                                    <span style="color: #94a3b8;">Avg Realized R:R:</span>
+                                    <strong id="journal-avg-rr" style="color: #fbbf24; margin-left: 4px;">1:--</strong>
+                                </div>
+                                <div>
+                                    <span style="color: #94a3b8;">Expectancy:</span>
+                                    <strong id="journal-expectancy" style="color: #38bdf8; margin-left: 4px;">+--R</strong>
                                 </div>
                             </div>
                         </div>
@@ -532,6 +660,77 @@
                         </div>
                         <div class="metric-figure" id="macro-vix-val">--.--</div>
                         <p class="metric-desc">Equity fear index; spike indicates safe-haven bullion inflow.</p>
+                    </div>
+                </div>
+
+                <!-- Geopolitical, FedWatch & Sovereign Decoupling Grid -->
+                <div class="essentials-grid" style="margin-top: 16px;">
+                    <!-- Card 1: CME FedWatch Rate Probabilities -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">🏛️</span>
+                                <h3>CME FedWatch Rate Probabilities</h3>
+                            </div>
+                            <span class="badge-tag" id="fedwatch-stance-badge" style="color: #34d399; font-weight: 800;">DOVISH EASING</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="margin-bottom: 12px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 4px;">
+                                    <span style="color: #94a3b8;">Total Implied Rate Cut Probability:</span>
+                                    <strong id="fedwatch-cut-prob" style="color: #34d399;">85.0%</strong>
+                                </div>
+                                <div class="depth-ratio-track" style="height: 8px;">
+                                    <div class="depth-ratio-fill bid" id="fedwatch-cut-bar" style="width: 85%;"></div>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 0.75rem; text-align: center; margin-bottom: 10px;">
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">25 BPS CUT</span>
+                                    <strong id="fedwatch-25bps" style="color: #34d399;">75.0%</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">50 BPS JUMBO</span>
+                                    <strong id="fedwatch-50bps" style="color: #38bdf8;">10.0%</strong>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <span style="color: #94a3b8; display: block; font-size: 0.65rem;">PAUSE</span>
+                                    <strong id="fedwatch-pause" style="color: #94a3b8;">15.0%</strong>
+                                </div>
+                            </div>
+                            <p class="geo-narrative" id="fedwatch-narrative-text" style="margin-top: 6px;">
+                                Markets pricing aggressive rate cuts into the forward curve, lowering real yields and creating strong bullion tailwinds.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Gold / Dollar Sovereign Decoupling Matrix -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <div class="header-title">
+                                <span class="card-icon">💵</span>
+                                <h3>Gold / Dollar Decoupling Matrix</h3>
+                            </div>
+                            <span class="badge-neutral" id="decoupling-badge">SOVEREIGN SAFE-HAVEN</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="cot-metrics-grid">
+                                <div class="cot-sub-box">
+                                    <span class="cot-lbl">Correlation State</span>
+                                    <span class="cot-val color-gold" id="decoupling-state">POSITIVE DECOUPLING</span>
+                                    <span class="cot-sub" id="decoupling-intensity">Extreme Safe-Haven</span>
+                                </div>
+                                <div class="cot-sub-box">
+                                    <span class="cot-lbl">Gold / DXY Beta</span>
+                                    <span class="cot-val color-green" id="decoupling-beta">1.82x</span>
+                                    <span class="cot-sub">30D Rolling: -0.72</span>
+                                </div>
+                            </div>
+                            <p class="geo-narrative" id="decoupling-narrative-text" style="margin-top: 10px;">
+                                Gold is rallying simultaneously with the US Dollar Index, confirming sovereign flight-to-safety capital flows.
+                            </p>
+                        </div>
                     </div>
                 </div>
 

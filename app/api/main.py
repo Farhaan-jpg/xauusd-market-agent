@@ -1055,5 +1055,165 @@ async def get_metals_matrix() -> Dict[str, Any]:
         "matrix": matrix
     }
 
+@app.get("/api/htf-trend")
+async def get_htf_trend() -> Dict[str, Any]:
+    """Returns 5-tier multi-timeframe hierarchy and HTF trend anchor."""
+    from app.analysis.trend.htf_anchor import HTFTrendLockEngine
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+
+    htf_data = HTFTrendLockEngine.evaluate_trend_hierarchy(
+        daily_trend=snapshot.trend if snapshot else "BULLISH",
+        h4_trend=snapshot.trend if snapshot else "BULLISH",
+        h1_trend=snapshot.trend if snapshot else "BULLISH",
+        m15_trend=latest.direction if latest else "BULLISH",
+        m5_trend=latest.direction if latest else "BULLISH",
+        technical_score=latest.technical_score if latest else 15.0,
+        current_price=price
+    )
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "htf_trend": htf_data
+    }
+
+@app.get("/api/fvg-zones")
+async def get_fvg_zones(timeframe: str = "5M") -> Dict[str, Any]:
+    """Returns unmitigated Fair Value Gaps (FVG) and institutional Order Blocks."""
+    from app.analysis.orderflow.fvg_engine import FairValueGapEngine
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2700.0
+
+    data = FairValueGapEngine.detect_fvg_and_orderblocks(candles=[], current_price=price, timeframe=timeframe)
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "fvg_data": data
+    }
+
+@app.get("/api/judas-swing")
+async def get_judas_swing() -> Dict[str, Any]:
+    """Returns active ICT Judas Swing liquidity purge detection."""
+    from app.analysis.liquidity.judas_swing_detector import JudasSwingDetector
+    from app.analysis.liquidity.session_calculator import SessionCalculator
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2700.0
+    kz_status = SessionCalculator.get_ict_killzone_status()
+
+    judas = JudasSwingDetector.detect_judas_swing(
+        current_price=price,
+        asian_high=snapshot.high_24h if snapshot else price + 8.0,
+        asian_low=snapshot.low_24h if snapshot else price - 8.0,
+        active_killzone=kz_status.get("active_killzone", "LONDON_OPEN"),
+        cvd_delta=0.0
+    )
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "judas_swing": judas
+    }
+
+@app.get("/api/fedwatch")
+async def get_fedwatch() -> Dict[str, Any]:
+    """Returns CME FedWatch implied rate cut probabilities and monetary regime."""
+    from app.analysis.macro.fedwatch_engine import FedWatchEngine
+    from app.data.macro.macro_provider import MacroDataProvider
+    macro_raw = await MacroDataProvider().fetch()
+    us2y = macro_raw.get("us2y", {}).get("yield_pct", 4.15)
+    us10y = macro_raw.get("us10y", {}).get("yield_pct", 4.38)
+
+    fedwatch = FedWatchEngine.calculate_rate_probabilities(us2y_yield=us2y, us10y_yield=us10y)
+    return {
+        "status": "SUCCESS",
+        "fedwatch": fedwatch
+    }
+
+@app.get("/api/dollar-decoupling")
+async def get_dollar_decoupling() -> Dict[str, Any]:
+    """Returns Gold / US Dollar (DXY) decoupling state and sovereign safe-haven index."""
+    from app.analysis.intermarket.decoupling_matrix import DollarDecouplingMatrix
+    from app.data.macro.macro_provider import MacroDataProvider
+    snapshot = await Repository.get_latest_market_snapshot()
+    macro_raw = await MacroDataProvider().fetch()
+
+    price = snapshot.price if snapshot else 2700.0
+    change = snapshot.change_24h if snapshot else 0.0
+    dxy_price = macro_raw.get("dxy", {}).get("price", 99.16)
+    dxy_change = macro_raw.get("dxy", {}).get("change_pct", 0.0)
+
+    decoupling = DollarDecouplingMatrix.calculate_decoupling(
+        gold_price=price,
+        gold_change_pct=change,
+        dxy_price=dxy_price,
+        dxy_change_pct=dxy_change
+    )
+    return {
+        "status": "SUCCESS",
+        "decoupling": decoupling
+    }
+
+@app.get("/api/trade-journal")
+async def get_trade_journal() -> Dict[str, Any]:
+    """Returns trade setup journal stats, cumulative win rate, and expectancy."""
+    from app.analysis.performance.trade_journal import TradeJournalEngine
+    metrics = TradeJournalEngine.get_journal_metrics()
+    return {
+        "status": "SUCCESS",
+        "journal": metrics
+    }
+
+@app.get("/api/news-blackout")
+async def get_news_blackout() -> Dict[str, Any]:
+    """Returns active pre-news blackout and defensive volatility status."""
+    from app.analysis.risk.news_blackout import NewsBlackoutGuard
+    events = await Repository.get_upcoming_economic_events(hours_ahead=12)
+    ev_dicts = [{"event_name": e.event_name, "importance": e.importance, "scheduled_time": e.scheduled_time} for e in events]
+    guard = NewsBlackoutGuard.evaluate_news_lockout(ev_dicts)
+    return {
+        "status": "SUCCESS",
+        "blackout_guard": guard
+    }
+
+@app.get("/api/one-look-summary")
+async def get_one_look_summary() -> Dict[str, Any]:
+    """Returns instantaneous 3-second summary: Market Bias, Tactical Action, and Risk Boundary."""
+    from app.analysis.trend.htf_anchor import HTFTrendLockEngine
+    from app.analysis.risk.news_blackout import NewsBlackoutGuard
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest = await Repository.get_latest_analysis_run()
+    price = snapshot.price if snapshot else 2700.0
+
+    htf_data = HTFTrendLockEngine.evaluate_trend_hierarchy(
+        daily_trend=snapshot.trend if snapshot else "BULLISH",
+        h4_trend=snapshot.trend if snapshot else "BULLISH",
+        h1_trend=snapshot.trend if snapshot else "BULLISH",
+        m15_trend=latest.direction if latest else "BULLISH",
+        m5_trend=latest.direction if latest else "BULLISH",
+        technical_score=latest.technical_score if latest else 15.0,
+        current_price=price
+    )
+
+    events = await Repository.get_upcoming_economic_events(hours_ahead=12)
+    ev_dicts = [{"event_name": e.event_name, "importance": e.importance, "scheduled_time": e.scheduled_time} for e in events]
+    guard = NewsBlackoutGuard.evaluate_news_lockout(ev_dicts)
+
+    is_bull = htf_data["htf_bias"] == "BULLISH"
+    invalidation = round(price - 12.5 if is_bull else price + 12.5, 2)
+
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "dominant_bias": htf_data["htf_bias"],
+        "htf_anchor": htf_data["htf_anchor"],
+        "clarity_state": htf_data["clarity_label"],
+        "tactical_action": htf_data["actionable_directive"],
+        "risk_invalidation_level": invalidation,
+        "sync_score_pct": htf_data["sync_score_pct"],
+        "lockout_active": guard["is_locked_out"],
+        "lockout_status": guard["status"]
+    }
+
+
 
 

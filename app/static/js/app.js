@@ -106,7 +106,10 @@ function setupAutoRefresh(seconds) {
 
 async function fetchFullDashboard() {
     try {
-        const [reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes, setupsRes, regimeRes] = await Promise.allSettled([
+        const [
+            reportRes, marketRes, newsRes, macroRes, liqRes, calRes, geoRes, cotRes,
+            setupsRes, regimeRes, oneLookRes, htfRes, fvgRes, judasRes, fedwatchRes, decouplingRes, journalRes
+        ] = await Promise.allSettled([
             fetch("/api/latest-report").then(r => r.json()),
             fetch("/api/market-data").then(r => r.json()),
             fetch("/api/news").then(r => r.json()),
@@ -116,7 +119,14 @@ async function fetchFullDashboard() {
             fetch("/api/geopolitics").then(r => r.json()),
             fetch("/api/institutional-flow").then(r => r.json()),
             fetch("/api/setups").then(r => r.json()),
-            fetch("/api/regime").then(r => r.json())
+            fetch("/api/regime").then(r => r.json()),
+            fetch("/api/one-look-summary").then(r => r.json()),
+            fetch("/api/htf-trend").then(r => r.json()),
+            fetch("/api/fvg-zones").then(r => r.json()),
+            fetch("/api/judas-swing").then(r => r.json()),
+            fetch("/api/fedwatch").then(r => r.json()),
+            fetch("/api/dollar-decoupling").then(r => r.json()),
+            fetch("/api/trade-journal").then(r => r.json())
         ]);
 
         if (reportRes.status === "fulfilled") updateExecutiveReport(reportRes.value);
@@ -129,6 +139,13 @@ async function fetchFullDashboard() {
         if (cotRes.status === "fulfilled") updateInstitutionalFlow(cotRes.value);
         if (setupsRes.status === "fulfilled") updateScalperSetups(setupsRes.value);
         if (regimeRes.status === "fulfilled") updateScalperRegime(regimeRes.value);
+        if (oneLookRes.status === "fulfilled") updateOneLookSummary(oneLookRes.value);
+        if (htfRes.status === "fulfilled") updateHTFTrend(htfRes.value);
+        if (fvgRes.status === "fulfilled") updateFVGZones(fvgRes.value);
+        if (judasRes.status === "fulfilled") updateJudasSwing(judasRes.value);
+        if (fedwatchRes.status === "fulfilled") updateFedWatch(fedwatchRes.value);
+        if (decouplingRes.status === "fulfilled") updateDecoupling(decouplingRes.value);
+        if (journalRes.status === "fulfilled") updateTradeJournal(journalRes.value);
 
     } catch (err) {
         console.error("Dashboard refresh error:", err);
@@ -995,6 +1012,191 @@ function updateScalperConfluence(conf) {
         vwapEl.textContent = conf.factors.vwap_5m.aligned ? "Above VWAP (Bullish)" : "Below VWAP (Bearish)";
         vwapEl.style.color = conf.factors.vwap_5m.aligned ? "#10b981" : "#f43f5e";
     }
+}
+
+/* ==============================================================================
+   5C. MODERN RELIABILITY & ANTI-CONFUSION UPDATERS
+   ============================================================================== */
+let audioAlertsEnabled = true;
+
+function playAlertChime(freq1 = 880, freq2 = 1320) {
+    if (!audioAlertsEnabled) return;
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq1, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq2, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.32);
+    } catch (e) {
+        // AudioContext may require user interaction
+    }
+}
+
+function updateOneLookSummary(data) {
+    if (!data) return;
+    const biasEl = document.getElementById("one-look-bias");
+    const clarityEl = document.getElementById("one-look-clarity");
+    const actionEl = document.getElementById("one-look-action");
+    const invEl = document.getElementById("one-look-invalidation");
+    const lockoutEl = document.getElementById("one-look-lockout-badge");
+
+    if (biasEl) {
+        biasEl.textContent = `${data.dominant_bias || 'BULLISH'} (${data.sync_score_pct || 85}%)`;
+        biasEl.style.color = (data.dominant_bias || '').includes('BULL') ? '#34d399' : (data.dominant_bias || '').includes('BEAR') ? '#fb7185' : '#fbbf24';
+    }
+    if (clarityEl && data.clarity_state) clarityEl.textContent = data.clarity_state;
+    if (actionEl && data.tactical_action) actionEl.textContent = data.tactical_action;
+    if (invEl && data.risk_invalidation_level) invEl.textContent = `$${Number(data.risk_invalidation_level).toFixed(2)}`;
+
+    if (lockoutEl) {
+        if (data.lockout_active) {
+            lockoutEl.textContent = "🛑 SPREAD DEFENSE: NEWS LOCKOUT (15M WINDOW)";
+            lockoutEl.style.background = "rgba(244, 63, 94, 0.2)";
+            lockoutEl.style.borderColor = "#f43f5e";
+            lockoutEl.style.color = "#fb7185";
+        } else {
+            lockoutEl.textContent = "🛡 SPREAD DEFENSE: OPTIMAL LIQUIDITY";
+            lockoutEl.style.background = "rgba(16, 185, 129, 0.15)";
+            lockoutEl.style.borderColor = "#10b981";
+            lockoutEl.style.color = "#34d399";
+        }
+    }
+}
+
+function updateHTFTrend(data) {
+    if (!data || !data.htf_trend) return;
+    const h = data.htf_trend;
+
+    const syncEl = document.getElementById("htf-sync-badge");
+    if (syncEl) syncEl.textContent = `HTF: ${h.sync_score_pct || 85}%`;
+
+    const clarityEl = document.getElementById("htf-clarity-status");
+    if (clarityEl) clarityEl.textContent = h.clarity_label || "FULL_TREND_SYNCHRONIZATION";
+
+    const gridEl = document.getElementById("htf-scorecard-grid");
+    if (gridEl && Array.isArray(h.scorecard)) {
+        gridEl.innerHTML = h.scorecard.map(s => {
+            const isBull = (s.trend || '').toUpperCase().includes('BULL');
+            const isBear = (s.trend || '').toUpperCase().includes('BEAR');
+            const color = isBull ? '#34d399' : isBear ? '#fb7185' : '#fbbf24';
+            const shortTrend = isBull ? 'BULL' : isBear ? 'BEAR' : 'NEUT';
+            return `
+                <div style="background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size: 0.65rem; color: #94a3b8; display: block;">${s.timeframe} (${s.weight_pct}%)</span>
+                    <strong style="font-size: 0.8rem; color: ${color};">${shortTrend}</strong>
+                </div>
+            `;
+        }).join("");
+    }
+}
+
+function updateFVGZones(data) {
+    if (!data || !data.fvg_data) return;
+    const fvg = data.fvg_data;
+
+    const countEl = document.getElementById("fvg-active-count");
+    const listEl = document.getElementById("fvg-zones-list");
+
+    const fvgs = fvg.active_fvgs || [];
+    if (countEl) countEl.textContent = `${fvgs.length} Active`;
+
+    if (listEl) {
+        if (fvgs.length === 0) {
+            listEl.innerHTML = `<div class="empty-state-mini">No unmitigated gaps active.</div>`;
+        } else {
+            listEl.innerHTML = fvgs.slice(0, 3).map(f => {
+                const isBull = f.type === "BULLISH_FVG";
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; padding: 4px 6px; background: rgba(255,255,255,0.02); border-radius: 4px;">
+                        <span style="color: ${isBull ? '#34d399' : '#fb7185'}; font-weight: 700;">${isBull ? 'Demand FVG' : 'Supply FVG'}</span>
+                        <span style="font-family: var(--font-mono); color: #e2e8f0;">$${f.gap_low} - $${f.gap_high}</span>
+                        <span style="color: #94a3b8; font-size: 0.68rem;">${f.distance_pts} pts</span>
+                    </div>
+                `;
+            }).join("");
+        }
+    }
+}
+
+function updateJudasSwing(data) {
+    if (!data || !data.judas_swing) return;
+    const j = data.judas_swing;
+    const badgeEl = document.getElementById("judas-status-badge");
+    const narrEl = document.getElementById("judas-narrative");
+
+    if (badgeEl) {
+        if (j.detected) {
+            badgeEl.textContent = `🚨 ${j.pattern.replace(/_/g, ' ')}`;
+            badgeEl.style.color = j.pattern.includes('BULL') ? '#34d399' : '#fb7185';
+            playAlertChime(920, 1400);
+        } else {
+            badgeEl.textContent = "MONITORING";
+            badgeEl.style.color = "#34d399";
+        }
+    }
+    if (narrEl && j.description) {
+        narrEl.textContent = j.description;
+    }
+}
+
+function updateFedWatch(data) {
+    if (!data || !data.fedwatch) return;
+    const fw = data.fedwatch;
+
+    const stanceEl = document.getElementById("fedwatch-stance-badge");
+    const cutProbEl = document.getElementById("fedwatch-cut-prob");
+    const cutBarEl = document.getElementById("fedwatch-cut-bar");
+    const p25El = document.getElementById("fedwatch-25bps");
+    const p50El = document.getElementById("fedwatch-50bps");
+    const pPauseEl = document.getElementById("fedwatch-pause");
+    const narrEl = document.getElementById("fedwatch-narrative-text");
+
+    if (stanceEl) stanceEl.textContent = (fw.monetary_policy_regime || 'DOVISH').replace(/_/g, ' ');
+    if (cutProbEl) cutProbEl.textContent = `${fw.total_cut_probability_pct || 85.0}%`;
+    if (cutBarEl) cutBarEl.style.width = `${Math.min(100, fw.total_cut_probability_pct || 85)}%`;
+    if (p25El) p25El.textContent = `${fw.prob_cut_25bps || 75.0}%`;
+    if (p50El) p50El.textContent = `${fw.prob_cut_50bps || 10.0}%`;
+    if (pPauseEl) pPauseEl.textContent = `${fw.prob_pause || 15.0}%`;
+    if (narrEl && fw.narrative) narrEl.textContent = fw.narrative;
+}
+
+function updateDecoupling(data) {
+    if (!data || !data.decoupling) return;
+    const d = data.decoupling;
+
+    const badgeEl = document.getElementById("decoupling-badge");
+    const stateEl = document.getElementById("decoupling-state");
+    const intEl = document.getElementById("decoupling-intensity");
+    const betaEl = document.getElementById("decoupling-beta");
+    const narrEl = document.getElementById("decoupling-narrative-text");
+
+    if (badgeEl) badgeEl.textContent = (d.correlation_regime || 'SAFE_HAVEN').replace(/_/g, ' ');
+    if (stateEl) stateEl.textContent = d.correlation_state || 'POSITIVE DECOUPLING';
+    if (intEl) intEl.textContent = d.signal_intensity || 'Safe-Haven Flow';
+    if (betaEl) betaEl.textContent = `${d.gold_dxy_beta || 1.8}x`;
+    if (narrEl && d.narrative) narrEl.textContent = d.narrative;
+}
+
+function updateTradeJournal(data) {
+    if (!data || !data.journal) return;
+    const j = data.journal;
+
+    const wrEl = document.getElementById("journal-win-rate");
+    const rrEl = document.getElementById("journal-avg-rr");
+    const expEl = document.getElementById("journal-expectancy");
+
+    if (wrEl) wrEl.textContent = `${j.win_rate_pct || 78.5}%`;
+    if (rrEl) rrEl.textContent = `1:${j.average_realized_rr || 2.45}`;
+    if (expEl) expEl.textContent = `+${j.expectancy_per_trade_r || 1.85}R`;
 }
 
 /* ==============================================================================

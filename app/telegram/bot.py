@@ -260,6 +260,49 @@ class TelegramBot:
             await self.send_message(response, chat_id=chat_id)
             return response
 
+        elif cmd == "/htf":
+            from app.analysis.trend.htf_anchor import HTFTrendLockEngine
+            snapshot = await Repository.get_latest_market_snapshot()
+            latest = await Repository.get_latest_analysis_run()
+            price = snapshot.price if snapshot else 2700.0
+
+            htf_data = HTFTrendLockEngine.evaluate_trend_hierarchy(
+                daily_trend=snapshot.trend if snapshot else "BULLISH",
+                h4_trend=snapshot.trend if snapshot else "BULLISH",
+                h1_trend=snapshot.trend if snapshot else "BULLISH",
+                m15_trend=latest.direction if latest else "BULLISH",
+                m5_trend=latest.direction if latest else "BULLISH",
+                technical_score=latest.technical_score if latest else 15.0,
+                current_price=price
+            )
+            response = AlertTemplates.htf_command_response(htf_data=htf_data, current_price=price)
+            await self.send_message(response, chat_id=chat_id)
+            return response
+
+        elif cmd == "/fvg":
+            from app.analysis.orderflow.fvg_engine import FairValueGapEngine
+            snapshot = await Repository.get_latest_market_snapshot()
+            price = snapshot.price if snapshot else 2700.0
+
+            fvg_data = FairValueGapEngine.detect_fvg_and_orderblocks(candles=[], current_price=price, timeframe="5M")
+            response = AlertTemplates.fvg_command_response(fvg_data=fvg_data, current_price=price)
+            await self.send_message(response, chat_id=chat_id)
+            return response
+
+        elif cmd == "/fedwatch":
+            from app.analysis.macro.fedwatch_engine import FedWatchEngine
+            fedwatch_data = FedWatchEngine.calculate_rate_probabilities()
+            response = AlertTemplates.fedwatch_command_response(fedwatch_data=fedwatch_data)
+            await self.send_message(response, chat_id=chat_id)
+            return response
+
+        elif cmd == "/journal":
+            from app.analysis.performance.trade_journal import TradeJournalEngine
+            journal_data = TradeJournalEngine.get_journal_metrics()
+            response = AlertTemplates.journal_command_response(journal_data=journal_data)
+            await self.send_message(response, chat_id=chat_id)
+            return response
+
         elif cmd == "/pinescript":
             from app.tools.pinescript_generator import PineScriptGenerator
             snapshot = await Repository.get_latest_market_snapshot()
