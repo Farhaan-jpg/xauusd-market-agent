@@ -325,9 +325,14 @@
 
                     <!-- Dynamic Mode-Specific Setup Card -->
                     <div id="hero-setup-box" style="margin-top: 14px; background: rgba(0,0,0,0.35); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 0.75rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">🎯 <span id="setup-card-mode-title">Scalping Trade Setup</span></span>
-                            <span id="setup-card-rr" style="font-size: 0.72rem; color: #34d399; font-weight: 700;">R:R 1:2.5</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; text-transform: uppercase;">🎯 <span id="setup-card-mode-title">Scalping Trade Setup</span></span>
+                                <span id="setup-card-rr" style="font-size: 0.72rem; color: #34d399; font-weight: 700; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 4px;">R:R 1:2.5</span>
+                            </div>
+                            <button id="btn-broadcast-tg" style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: linear-gradient(135deg, #0284c7, #0369a1); border: 1px solid rgba(56, 189, 248, 0.4); color: #ffffff; border-radius: 6px; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease;" title="Broadcast this live setup to your connected Telegram channel">
+                                <span>📲</span> <span id="btn-broadcast-text">Send Setup to Telegram</span>
+                            </button>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; font-size: 0.75rem;">
                             <div style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 4px;">

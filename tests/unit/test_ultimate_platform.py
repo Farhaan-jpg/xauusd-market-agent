@@ -140,3 +140,14 @@ class TestUltimateApiEndpoints:
             data_day = res_day.json()
             assert data_day["status"] == "SUCCESS"
             assert data_day["data"]["mode"] == "DAY TRADING"
+
+    async def test_api_broadcast_trade_setup(self):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as ac:
+            res = await ac.post("/api/broadcast-trade-setup", json={"mode": "scalp"})
+            assert res.status_code == 200
+            data = res.json()
+            assert data["status"] in ["SUCCESS", "FAILED"]
+            assert "trade_setup" in data
+            assert data["mode"] == "SCALPING"
+

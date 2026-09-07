@@ -1457,6 +1457,34 @@ function initActionButtons() {
             showToast("📰 Real-time news feeds synchronized.");
         });
     }
+
+    const btnBroadcast = document.getElementById("btn-broadcast-tg");
+    if (btnBroadcast) {
+        btnBroadcast.addEventListener("click", async () => {
+            const origHtml = btnBroadcast.innerHTML;
+            btnBroadcast.innerHTML = `<span>⏳</span> Broadcasting...`;
+            btnBroadcast.disabled = true;
+
+            try {
+                const res = await fetch("/api/broadcast-trade-setup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mode: currentTradingMode })
+                });
+                const data = await res.json();
+                if (data.status === "SUCCESS") {
+                    showToast(`📲 Trade Setup (${data.mode}) sent to Telegram!`);
+                } else {
+                    showToast(`⚠️ Broadcast notice: ${data.message}`);
+                }
+            } catch (err) {
+                showToast("❌ Network error broadcasting to Telegram.");
+            } finally {
+                btnBroadcast.innerHTML = origHtml;
+                btnBroadcast.disabled = false;
+            }
+        });
+    }
 }
 
 function initModeSwitcher() {

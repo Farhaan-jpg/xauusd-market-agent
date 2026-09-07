@@ -1289,6 +1289,53 @@ async def get_ultimate_intelligence(mode: str = "daytrade") -> Dict[str, Any]:
         "data": verdict
     }
 
+@app.post("/api/broadcast-trade-setup")
+async def broadcast_trade_setup(payload: Dict[str, Any] = None) -> Dict[str, Any]:
+    """
+    Broadcasts the active high-conviction trade setup to configured Telegram channels.
+    """
+    from app.analysis.intermarket.all_correlations_matrix import AllCorrelationsMatrix
+    from app.analysis.geopolitical.live_geopolitics_feed import LiveGeopoliticsFeed
+    from app.analysis.news.financial_news_feed import FinancialNewsFeed
+    from app.analysis.intelligence.ultimate_synthesizer import UltimateSynthesizer
+    from app.alerts.templates import AlertTemplates
+    from app.telegram.bot import TelegramBot
+
+    mode = (payload or {}).get("mode", "scalp")
+    snapshot = await Repository.get_latest_market_snapshot()
+    latest_run = await Repository.get_latest_analysis_run()
+
+    price = snapshot.price if snapshot and snapshot.price else 2724.50
+    change_pct = snapshot.change_24h if snapshot and snapshot.change_24h is not None else 0.48
+    tech_score = latest_run.technical_score if latest_run and latest_run.technical_score is not None else 18.5
+
+    geo_data = LiveGeopoliticsFeed.evaluate_geopolitics()
+    fin_data = FinancialNewsFeed.evaluate_financial_wire()
+    corr_data = AllCorrelationsMatrix.calculate_matrix(gold_change_pct=change_pct)
+
+    verdict = UltimateSynthesizer.synthesize_market_verdict(
+        current_price=price,
+        gold_change_pct=change_pct,
+        geopolitics_data=geo_data,
+        financial_data=fin_data,
+        correlations_data=corr_data,
+        technical_score=tech_score,
+        cvd_delta=320.0,
+        mode=mode
+    )
+
+    msg_html = AlertTemplates.trade_setup_broadcast_template(verdict)
+    bot = TelegramBot()
+    sent = await bot.send_message(msg_html)
+
+    return {
+        "status": "SUCCESS" if sent else "FAILED",
+        "message": "Trade setup successfully broadcast to Telegram!" if sent else "Failed to send to Telegram (check bot token/chat ID).",
+        "trade_setup": verdict.get("actionable_setup"),
+        "mode": verdict.get("mode")
+    }
+
+
 
 
 
