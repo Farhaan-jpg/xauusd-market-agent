@@ -97,7 +97,11 @@ class IntelligenceOrchestrator:
         # 3. Execute Deterministic Analysis Engines
         market_analysis = self.market_engine.analyze(market_data)
         liquidity_analysis = self.liquidity_engine.analyze(market_data)
-        macro_analysis = self.macro_engine.analyze(macro_data)
+        macro_analysis = self.macro_engine.analyze(
+            macro_data,
+            gold_change_pct=market_data.get("change_24h", 0.0),
+            upcoming_events=econ_data
+        )
         news_analysis = self.news_engine.analyze(news_data)
 
         current_price = market_analysis.get("price", 0.0)
@@ -249,9 +253,14 @@ class IntelligenceOrchestrator:
         }
 
     async def start_continuous_loop(self) -> None:
-        """Runs the intelligence cycle in an infinite scheduled loop."""
+        """Runs the intelligence cycle in an infinite scheduled loop with interactive Telegram polling."""
         self.is_running = True
         await self.initialize()
+
+        # Start interactive Telegram bot command listener in background
+        bot_task = None
+        if self.alert_engine.bot.enabled:
+            bot_task = asyncio.create_task(self.alert_engine.bot.run_poller_loop(orchestrator=self))
 
         logger.info(f"Starting continuous intelligence scheduler (Interval: {settings.ANALYSIS_INTERVAL_SECONDS}s, PauseOnWeekends: {settings.PAUSE_ON_WEEKENDS})")
         # First cycle triggers initial report if not weekend paused
@@ -263,19 +272,24 @@ class IntelligenceOrchestrator:
         except Exception as e:
             logger.error(f"Error in initial intelligence cycle: {e}")
 
-        while self.is_running:
-            try:
-                await asyncio.sleep(settings.ANALYSIS_INTERVAL_SECONDS)
-                if settings.PAUSE_ON_WEEKENDS and is_weekend_market_closed():
-                    logger.debug("Weekend detected & PAUSE_ON_WEEKENDS is enabled. Skipping cycle until market reopens.")
-                    continue
-                await self.run_cycle(force_report=False)
-            except asyncio.CancelledError:
-                logger.info("Intelligence loop cancelled.")
-                break
-            except Exception as e:
-                logger.error(f"Error in continuous intelligence loop: {e}")
-                await asyncio.sleep(15)  # Pause before retry on failure
+        try:
+            while self.is_running:
+                try:
+                    await asyncio.sleep(settings.ANALYSIS_INTERVAL_SECONDS)
+                    if settings.PAUSE_ON_WEEKENDS and is_weekend_market_closed():
+                        logger.debug("Weekend detected & PAUSE_ON_WEEKENDS is enabled. Skipping cycle until market reopens.")
+                        continue
+                    await self.run_cycle(force_report=False)
+                except asyncio.CancelledError:
+                    logger.info("Intelligence loop cancelled.")
+                    break
+                except Exception as e:
+                    logger.error(f"Error in continuous intelligence loop: {e}")
+                    await asyncio.sleep(15)  # Pause before retry on failure
+        finally:
+            if bot_task:
+                bot_task.cancel()
 
     def stop(self) -> None:
         self.is_running = False
+

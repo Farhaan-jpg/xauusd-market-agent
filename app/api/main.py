@@ -800,3 +800,126 @@ async def sync_news(force_analysis: bool = False) -> Dict[str, Any]:
         logger.error(f"Error in sync_news: {e}")
         return {"status": "ERROR", "message": str(e)}
 
+@app.get("/api/killzones")
+async def get_killzones() -> Dict[str, Any]:
+    """Returns real-time ICT Killzone status, session timetable, and active market phase."""
+    from app.analysis.liquidity.session_calculator import SessionCalculator
+    kz_data = SessionCalculator.get_ict_killzone_status()
+    snapshot = await Repository.get_latest_market_snapshot()
+    price = snapshot.price if snapshot else 2700.0
+    return {
+        "status": "SUCCESS",
+        "current_price": price,
+        "killzone_data": kz_data
+    }
+
+@app.get("/api/divergence")
+async def get_divergence() -> Dict[str, Any]:
+    """Returns DXY, US10Y yield and Gold intermarket divergence analysis."""
+    from app.data.macro.macro_provider import MacroDataProvider
+    from app.analysis.macro.macro_engine import MacroEngine
+    
+    macro_provider = MacroDataProvider()
+    raw_macro = await macro_provider.fetch()
+    
+    snapshot = await Repository.get_latest_market_snapshot()
+    gold_price = snapshot.price if snapshot else 2700.0
+    gold_change = snapshot.change_24h if snapshot else 0.0
+    
+    dxy_chg = raw_macro.get("dxy", {}).get("change_pct", 0.0)
+    yield_chg = raw_macro.get("us10y", {}).get("change_pct", 0.0)
+    
+    macro_engine = MacroEngine()
+    divergence = macro_engine.dxy_gold_divergence(
+        dxy_change_pct=dxy_chg,
+        gold_change_pct=gold_change,
+        yield_change_pct=yield_chg
+    )
+    
+    return {
+        "status": "SUCCESS",
+        "gold_price": gold_price,
+        "gold_change_pct": gold_change,
+        "dxy_price": raw_macro.get("dxy", {}).get("price", 104.0),
+        "dxy_change_pct": dxy_chg,
+        "us10y_yield": raw_macro.get("us10y", {}).get("yield_pct", 4.3),
+        "us10y_change_pct": yield_chg,
+        "divergence": divergence
+    }
+
+@app.post("/api/webhook/tradingview")
+async def tradingview_webhook(request: Request, background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """
+    Ingests TradingView alerts and Pine Script strategy signals,
+    and relays high-priority execution telemetry to Telegram.
+    """
+    from app.alerts.templates import AlertTemplates
+    from app.telegram.bot import TelegramBot
+    
+    try:
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            payload = await request.json()
+        else:
+            raw_body = await request.body()
+            import json
+            try:
+                payload = json.loads(raw_body.decode("utf-8"))
+            except Exception:
+                payload = {"message": raw_body.decode("utf-8", errors="ignore")}
+        
+        ticker = payload.get("ticker", payload.get("symbol", "XAUUSD"))
+        action = payload.get("action", payload.get("side", payload.get("order_action", "SIGNAL")))
+        price = float(payload.get("price", payload.get("close", 0.0)))
+        timeframe = payload.get("timeframe", payload.get("interval", "5m"))
+        strategy = payload.get("strategy", payload.get("name", "TradingView Alert"))
+        message = payload.get("message", payload.get("comment", ""))
+        
+        logger.info(f"Received TradingView webhook: {action} on {ticker} @ ${price}")
+        
+        alert_text = AlertTemplates.tradingview_webhook_alert(
+            ticker=ticker,
+            action=action,
+            price=price,
+            timeframe=timeframe,
+            strategy_name=strategy,
+            message=message
+        )
+        
+        bot = TelegramBot()
+        background_tasks.add_task(bot.send_message, alert_text)
+        
+        return {
+            "status": "SUCCESS",
+            "received": {
+                "ticker": ticker,
+                "action": action,
+                "price": price,
+                "timeframe": timeframe
+            }
+        }
+    except Exception as e:
+        logger.error(f"TradingView webhook error: {e}")
+        return {"status": "ERROR", "message": str(e)}
+
+@app.post("/api/telegram/webhook")
+async def telegram_webhook(request: Request, background_tasks: BackgroundTasks) -> Dict[str, Any]:
+    """Receives inbound Telegram bot updates via webhook."""
+    from app.telegram.bot import TelegramBot
+    try:
+        data = await request.json()
+        msg = data.get("message", {})
+        text = msg.get("text", "")
+        chat = msg.get("chat", {})
+        sender_chat_id = str(chat.get("id", ""))
+        
+        if text.startswith("/"):
+            bot = TelegramBot()
+            background_tasks.add_task(bot.handle_command, text, sender_chat_id, orchestrator)
+            
+        return {"status": "ok"}
+    except Exception as e:
+        logger.error(f"Telegram webhook processing error: {e}")
+        return {"status": "error", "message": str(e)}
+
+

@@ -260,3 +260,217 @@ Current:  {dir_emoji} <b>{esc(new_direction)}</b> ({new_score:+.1f})
 ━━━━━━━━━━━━━━━━━━━━
 <i>Price is approaching a high-significance structural liquidity cluster.</i>"""
 
+    @staticmethod
+    def scalp_command_response(
+        price: float,
+        scalp_bias: str,
+        day_trade_bias: str,
+        overall_trend: str,
+        market_structure: str,
+        vwap: float,
+        tech_score: float,
+        rsi_15m: float,
+        supertrend: str = "",
+        killzone: str = "",
+        sweep_warning: str = ""
+    ) -> str:
+        esc = TelegramBot.escape
+        dir_emoji = "🟢" if "BULL" in scalp_bias else "🔴" if "BEAR" in scalp_bias else "⚪"
+        vwap_diff = price - vwap if vwap > 0 else 0
+        vwap_pos = "ABOVE" if vwap_diff >= 0 else "BELOW"
+        
+        sweep_section = ""
+        if sweep_warning:
+            sweep_section = f"\n⚠️ <b>LIQUIDITY SWEEP / JUDAS:</b> {esc(sweep_warning)}"
+
+        return f"""⚡ <b>REAL-TIME XAUUSD SCALP RADAR (5M / 15M)</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Spot Price:</b> ${price:.2f}
+{dir_emoji} <b>5M Scalp Bias:</b> <b>{esc(scalp_bias)}</b>
+🎯 <b>15M Day Bias:</b> <b>{esc(day_trade_bias)}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>📊 TECHNICAL & STRUCTURE DYNAMICS:</b>
+• Market Structure: <b>{esc(market_structure or 'RANGING')}</b>
+• Session VWAP: <b>${vwap:.2f}</b> ({vwap_pos} by ${abs(vwap_diff):.2f})
+• SuperTrend: <b>{esc(supertrend or 'NEUTRAL')}</b>
+• 15M RSI: <b>{rsi_15m:.1f}</b>
+• 1H Higher Timeframe: <b>{esc(overall_trend.replace('_', ' '))}</b> (Score: {tech_score:+.1f})
+• Active Killzone: <b>{esc(killzone or 'OFF_HOURS')}</b>{sweep_section}
+━━━━━━━━━━━━━━━━━━━━
+<i>⚡ Quick-reaction intraday telemetry. Manage risk tightly.</i>""".strip()
+
+    @staticmethod
+    def levels_command_response(
+        price: float,
+        liquidity_above: list,
+        liquidity_below: list,
+        session_high: float = 0.0,
+        session_low: float = 0.0,
+        asian_high: float = 0.0,
+        asian_low: float = 0.0,
+        adr: float = 0.0
+    ) -> str:
+        esc = TelegramBot.escape
+        above_str = ""
+        for z in liquidity_above[:3]:
+            above_str += f"\n  🔴 <b>${z['price']:.2f}</b> - {esc(z['zone_type'])} (Str: {z['strength']:.0f})"
+        if not above_str: above_str = "\n  • No immediate resistance clusters"
+
+        below_str = ""
+        for z in liquidity_below[:3]:
+            below_str += f"\n  🟢 <b>${z['price']:.2f}</b> - {esc(z['zone_type'])} (Str: {z['strength']:.0f})"
+        if not below_str: below_str = "\n  • No immediate support clusters"
+
+        session_str = ""
+        if session_high > 0 and session_low > 0:
+            session_str = f"""━━━━━━━━━━━━━━━━━━━━
+<b>🎯 KEY INTRADAY BENCHMARKS:</b>
+• Day High: <b>${session_high:.2f}</b> | Day Low: <b>${session_low:.2f}</b>"""
+            if asian_high > 0 and asian_low > 0:
+                session_str += f"\n• Asian High: <b>${asian_high:.2f}</b> | Asian Low: <b>${asian_low:.2f}</b>"
+            if adr > 0:
+                session_str += f"\n• Average Daily Range (ADR): <b>${adr:.2f}</b>"
+
+        return f"""🎯 <b>XAUUSD KEY LIQUIDITY & ORDERFLOW LEVELS</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Current Spot:</b> ${price:.2f}
+
+<b>🔺 BUY-SIDE LIQUIDITY / RESISTANCE (BSL):</b>{above_str}
+
+<b>🔻 SELL-SIDE LIQUIDITY / SUPPORT (SSL):</b>{below_str}
+{session_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>🌊 High-volume institutional resting liquidity clusters.</i>""".strip()
+
+    @staticmethod
+    def killzone_command_response(
+        killzone_info: dict,
+        current_price: float,
+        recent_sweeps: list = None
+    ) -> str:
+        esc = TelegramBot.escape
+        active_kz = killzone_info.get("active_killzone")
+        is_active = killzone_info.get("is_active", False)
+        kz_name = killzone_info.get("killzone_name", "None")
+        next_kz = killzone_info.get("next_killzone", "None")
+        starts_in = killzone_info.get("starts_in_minutes", 0)
+
+        status_badge = f"🟢 <b>ACTIVE: {esc(kz_name)}</b>" if is_active else f"⚪ <b>OFF-HOURS / REGULAR SESSION</b>"
+        
+        sweeps_str = ""
+        if recent_sweeps:
+            for s in recent_sweeps[:2]:
+                sweeps_str += f"\n  • ⚠️ <b>{esc(s.get('type', 'SWEEP'))}</b> at ${s.get('sweep_price', 0):.2f} ({esc(s.get('description', ''))})"
+        if not sweeps_str:
+            sweeps_str = "\n  • No major Judas swing / sweep detected in last 3h"
+
+        return f"""🏛 <b>ICT SESSION & KILLZONE TELEMETRY</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>Spot Price:</b> ${current_price:.2f}
+Status: {status_badge}
+━━━━━━━━━━━━━━━━━━━━
+<b>⏰ ICT SESSION SCHEDULE (UTC):</b>
+• <b>Asian Range:</b> 00:00 - 06:00 UTC (05:30 - 11:30 IST)
+• <b>London Open:</b> 07:00 - 10:00 UTC (12:30 - 15:30 IST) <i>[Judas High Risk]</i>
+• <b>NY AM Open:</b> 12:00 - 15:00 UTC (17:30 - 20:30 IST) <i>[Volatility Expansion]</i>
+• <b>London Close:</b> 15:00 - 17:00 UTC (20:30 - 22:30 IST) <i>[Profit Taking / Reversals]</i>
+
+<b>⏳ NEXT KILLZONE:</b>
+• <b>{esc(next_kz)}</b> (Starts in ~{starts_in} min)
+
+<b>🌊 RECENT LIQUIDITY PURGES:</b>{sweeps_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>Institutional time & price algorithm window tracking.</i>""".strip()
+
+    @staticmethod
+    def dxy_command_response(
+        dxy_price: float,
+        dxy_change: float,
+        dxy_trend: str,
+        us10y_yield: float,
+        us10y_change: float,
+        divergence_status: str,
+        divergence_desc: str,
+        gold_price: float,
+        gold_change: float
+    ) -> str:
+        esc = TelegramBot.escape
+        div_emoji = "🟢" if "BULLISH" in divergence_status else "🔴" if "BEARISH" in divergence_status else "⚪"
+        return f"""💵 <b>DXY & US10Y INTERMARKET DIVERGENCE ENGINE</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+💰 <b>XAUUSD:</b> ${gold_price:.2f} ({gold_change:+.2f}%)
+💵 <b>US Dollar Index (DXY):</b> {dxy_price:.2f} ({dxy_change:+.2f}%) - <b>{esc(dxy_trend)}</b>
+📈 <b>US 10-Year Treasury Yield:</b> {us10y_yield:.3f}% ({us10y_change:+.2f}%)
+━━━━━━━━━━━━━━━━━━━━
+{div_emoji} <b>INTERMARKET DIVERGENCE VERDICT:</b>
+<b>{esc(divergence_status)}</b>
+
+📝 <b>Mechanism Analysis:</b>
+{esc(divergence_desc)}
+━━━━━━━━━━━━━━━━━━━━
+<i>Macro correlation tracking: Gold typically holds inverse correlation with DXY & Yields.</i>""".strip()
+
+    @staticmethod
+    def help_command_response() -> str:
+        return """🤖 <b>XAUUSD MARKET AGENT - INTERACTIVE RADAR</b>
+━━━━━━━━━━━━━━━━━━━━
+Available Commands:
+• <b>/scalp</b> - Real-time 5M/15M scalping & day trade bias, VWAP, SuperTrend & structure
+• <b>/levels</b> - Buy-side (BSL) & sell-side (SSL) liquidity pools, orderblocks & intraday levels
+• <b>/killzone</b> - Current ICT Killzone window status, Judas swing alerts & schedule
+• <b>/dxy</b> - US Dollar Index (DXY) & 10Y Yield correlation divergence engine
+• <b>/verdict</b> - Full institutional executive market direction & intelligence report
+• <b>/news</b> - Real-time breaking high-impact headlines with recency weighting
+• <b>/help</b> - Show this command list
+
+━━━━━━━━━━━━━━━━━━━━
+<i>Tip: Webhook signals from TradingView are automatically relayed to this channel.</i>""".strip()
+
+    @staticmethod
+    def tradingview_webhook_alert(
+        ticker: str,
+        action: str,
+        price: float,
+        timeframe: str = "5m",
+        strategy_name: str = "TradingView Alert",
+        message: str = ""
+    ) -> str:
+        esc = TelegramBot.escape
+        act_emoji = "🟢" if "BUY" in action.upper() or "LONG" in action.upper() else "🔴" if "SELL" in action.upper() or "SHORT" in action.upper() else "⚡"
+        msg_str = f"\n📝 <b>Details:</b> {esc(message)}" if message else ""
+        return f"""{act_emoji} <b>TRADINGVIEW WEBHOOK INCOMING SIGNAL</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+🎯 <b>Strategy:</b> {esc(strategy_name)}
+🏷 <b>Symbol:</b> {esc(ticker.upper())} ({esc(timeframe)})
+⚡ <b>Action:</b> <b>{esc(action.upper())}</b>
+💰 <b>Trigger Price:</b> ${price:.2f}{msg_str}
+━━━━━━━━━━━━━━━━━━━━
+<i>External chart automation trigger relayed via XAUUSD Market Agent.</i>""".strip()
+
+    @staticmethod
+    def pre_news_lockout_alert(
+        event_name: str,
+        minutes_to_event: int,
+        scheduled_time: str,
+        impact: str = "HIGH"
+    ) -> str:
+        esc = TelegramBot.escape
+        return f"""⚠️ <b>PRE-NEWS VOLATILITY LOCKOUT WARNING</b>
+📅 <i>{get_formatted_time()}</i>
+━━━━━━━━━━━━━━━━━━━━
+🛑 <b>High-Impact Red-Folder Event Imminent:</b>
+• <b>{esc(event_name)}</b> [{esc(impact)}]
+• Scheduled: <b>{esc(scheduled_time)}</b>
+• Countdown: <b>T-Minus {minutes_to_event} minutes</b>
+
+🔒 <b>SYSTEM PROTOCOL:</b>
+High probability of institutional slippage, spread expansion, and two-way stop hunting. Caution is advised for tight scalp setups until 15 minutes post-release.
+━━━━━━━━━━━━━━━━━━━━
+<i>Institutional volatility protection protocol.</i>""".strip()
+
+

@@ -98,6 +98,20 @@ class LiquidityEngine:
         # 6. Deduplicate and cluster adjacent zones
         clustered_zones = self._cluster_zones(zones, price)
 
+        # 7. ICT Killzone & Liquidity Sweeps Detection
+        now_utc = datetime.now(timezone.utc)
+        killzone_info = SessionCalculator.get_ict_killzone_status(now_utc)
+        
+        pdh_val = float(df_1d["high"].iloc[-2]) if not df_1d.empty and len(df_1d) >= 2 else 0.0
+        pdl_val = float(df_1d["low"].iloc[-2]) if not df_1d.empty and len(df_1d) >= 2 else 0.0
+        active_sweeps = self._detect_liquidity_sweeps(
+            df=active_df,
+            current_price=price,
+            session_data=session_data,
+            pdh=pdh_val,
+            pdl=pdl_val
+        )
+
         # Separate above and below
         liquidity_above = [z for z in clustered_zones if z["is_above"]]
         liquidity_below = [z for z in clustered_zones if not z["is_above"]]
@@ -124,11 +138,11 @@ class LiquidityEngine:
         sup_dist = round(abs(price - nearest_sup), 1)
         imbalance_desc = f"Net Institutional Accumulation ({demand_pct}% Bid Depth vs {supply_pct}% Ask)" if demand_pct >= supply_pct else f"Net Institutional Distribution ({supply_pct}% Ask Pressure vs {demand_pct}% Bid)"
         
+        sweep_desc = f" | Active Sweep: {active_sweeps[0]['description']}" if active_sweeps else ""
         narrative = (
-            f"Order-flow structure indicates {imbalance_desc}. "
+            f"Order-flow structure indicates {imbalance_desc}{sweep_desc}. "
             f"Active spot auction (${price:.2f}) is bounded between immediate overhead supply liquidity at ${nearest_res:.2f} (+{res_dist} pts) "
-            f"and underlying institutional demand defense at ${nearest_sup:.2f} (-{sup_dist} pts). "
-            f"Elevated liquidity sweep probability observed near ${nearest_res:.2f} (Overhead BSL Stop Run Target)."
+            f"and underlying institutional demand defense at ${nearest_sup:.2f} (-{sup_dist} pts)."
         )
 
         return {
@@ -143,11 +157,89 @@ class LiquidityEngine:
             "order_flow_narrative": narrative,
             "immediate_resistance": nearest_res,
             "immediate_support": nearest_sup,
-            "active_sessions": SessionCalculator.get_active_sessions(datetime.now(timezone.utc)),
+            "active_sessions": SessionCalculator.get_active_sessions(now_utc),
             "session_ranges": session_data,
+            "killzone": killzone_info,
+            "active_sweeps": active_sweeps,
             "aggregate_liquidity_score": round(float(avg_strength), 1),
             "total_zones_detected": len(clustered_zones)
         }
+
+    def _detect_liquidity_sweeps(
+        self,
+        df: Any,
+        current_price: float,
+        session_data: Optional[Dict[str, Any]] = None,
+        pdh: float = 0.0,
+        pdl: float = 0.0
+    ) -> List[Dict[str, Any]]:
+        """Detects Buy-Side (BSL) and Sell-Side (SSL) Liquidity Sweeps / Judas Swings."""
+        sweeps = []
+        session_data = session_data or {}
+        
+        if isinstance(df, list):
+            if len(df) < 2:
+                return sweeps
+            df = pd.DataFrame(df)
+
+        if not isinstance(df, pd.DataFrame) or df.empty or len(df) < 2:
+            return sweeps
+
+        recent_bars = df.iloc[-min(5, len(df)):]
+        recent_high = float(recent_bars["high"].max())
+        recent_low = float(recent_bars["low"].min())
+        curr_close = float(df["close"].iloc[-1])
+
+        levels_to_check = []
+        if pdh > 0: levels_to_check.append(("PDH (Previous Day High)", pdh, "HIGH"))
+        if pdl > 0: levels_to_check.append(("PDL (Previous Day Low)", pdl, "LOW"))
+
+        for s_name, s_info in session_data.items():
+            if s_info.get("high", 0) > 0:
+                levels_to_check.append((f"{s_name} Session High", s_info["high"], "HIGH"))
+            if s_info.get("low", 0) > 0:
+                levels_to_check.append((f"{s_name} Session Low", s_info["low"], "LOW"))
+
+        # Also check against recent swing points in the dataframe itself if no external levels
+        if not levels_to_check and len(df) >= 2:
+            prev_high = float(df["high"].iloc[-2])
+            prev_low = float(df["low"].iloc[-2])
+            levels_to_check.append(("Prior High", prev_high, "HIGH"))
+            levels_to_check.append(("Prior Low", prev_low, "LOW"))
+
+        for name, lvl, side in levels_to_check:
+            # BSL Sweep: High pierced level but close rejected back below level
+            if side == "HIGH" and recent_high > lvl and curr_close < lvl:
+                wick_size = round(recent_high - lvl, 2)
+                if 0.2 <= wick_size <= 15.0:
+                    sweeps.append({
+                        "type": "BSL_SWEEP_REVERSAL",
+                        "level_swept": name,
+                        "level_price": lvl,
+                        "wick_high": recent_high,
+                        "wick_depth": wick_size,
+                        "bias": "BEARISH",
+                        "sweep_price": recent_high,
+                        "description": f"Buy-Side Liquidity sweep above {name} (${lvl:.2f}) with bearish rejection"
+                    })
+
+            # SSL Sweep: Low pierced level but close rejected back above level
+            elif side == "LOW" and recent_low < lvl and curr_close > lvl:
+                wick_size = round(lvl - recent_low, 2)
+                if 0.2 <= wick_size <= 15.0:
+                    sweeps.append({
+                        "type": "SSL_SWEEP_REVERSAL",
+                        "level_swept": name,
+                        "level_price": lvl,
+                        "wick_low": recent_low,
+                        "wick_depth": wick_size,
+                        "bias": "BULLISH",
+                        "sweep_price": recent_low,
+                        "description": f"Sell-Side Liquidity sweep below {name} (${lvl:.2f}) with bullish rejection"
+                    })
+
+        return sweeps
+
 
     def generate_horizontal_profile(self, current_price: float, zones: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Generates continuous horizontal price-depth bins around spot price for order-flow visualization."""
